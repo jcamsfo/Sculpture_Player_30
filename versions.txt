@@ -1,0 +1,71 @@
+15 tries to make the window smaller so it's not so big on 1080P
+
+16 small changed
+
+17 tries to change the fading from 3 Mats to 2 Mats
+    works completely all the way to Pre FTDI
+
+18 starts FTDI stuff  didnt work well
+
+19 starts with 17 again  also did not work
+ 
+20 starts with 17 and GETS RID OF PROGRAM SYNCING and used xilinx syncing!!!!
+    this one reads 64 bytes from FTDI every 16.6ms and runs Video Vdvance every 33ms 
+    and runs a dummy delay for the second 16ms
+    WINNER
+  
+    
+21 starts with 20 this one reads 128 bytes from FTDI every 33ms over 2 16.6ms sends
+    and runs Video Advance every 33ms 
+    no need for dummy because it waits until the FTDI buffer has 2 reads of 64
+    it also only sends FTDI every 33ms!!!
+    This one glitched 1 out of 5 times  
+    20 is the WINNER
+    
+ 22 Starts with 20 and tries to add the gtk drag and drop from the test which also has the new python sliders
+    works!!
+    
+ 23 starts with 22 and strips out the GUI so that the next one can have a built in GTK GUI
+ 
+ 24 moves some things out of main and cleans things up a bit.
+    ALSO MOVES THE MAIN LOOP INTO A THREAD!!!!!!
+    NO GUI  NO SOCKET
+ 
+ 25 tries adds sdl2 as a image viewer and it works, 
+    not slower when the SDL_show was moved after the loop timing element!
+    works well
+    
+ 26 WORKS with SDL2 and opencv for processing and GTK GUI thread  but the GUI is not connected yet!
+ 
+ 27 moved gtk4 stuff into same cmake file
+    Sent to Sam
+    
+ 27 other Sam's had weird timing issues inconsistent
+ 
+ 28 start with original 27 and added atomics for the gui and a small mutex for the filename and path 
+    and changed params to a struct and made Mixer_params the same type
+    drag and drop works with video
+    HAD WAY INCONSISTENT DELAYS like Sams
+    
+29 started with 27 and has GUI connected with numbers not images and working  old params style
+    delay is delays are good
+  
+30  starts with 29 and adds d&d from 28 with nothing else   WORKS with good timing
+    has close to everything  needs a lot of cleanup with the final stuff I added
+    Added everything to Sculpture  should move to other places
+    Things to clean up:
+    FIX:
+        ADD a 4 PM loading of sunrise sunset!!!
+        HAS A WEIRD STARTUP ISSUE OF LONG PIPELINE DELAYS until 1st video change over ?
+   longer term
+   0.   Add current time to display  
+   1.   DONE!! Change the folder stuff to be cleaner with a files folder
+   2.   Too many Params floating around everywhere  should change to a structure from vector
+            and make them global (like I tried in Ver 28)
+   3.   Should have the downstream params and the regular the same "type" of structure
+            need to add RGB gains
+   4.   Move all of the file reading and parameter reading etc somewhere else I think to clean it
+   5.   Move all of the time of day and start time to it's own cpp and h
+   6.   Fix memory leak that is still there
+ 
+

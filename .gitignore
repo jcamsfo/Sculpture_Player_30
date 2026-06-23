@@ -1,0 +1,7 @@
+build/CMakeFiles/
+build/CMakeCache.txt
+build/Makefile
+build/*.o
+build/*.a
+build/*.so
+build/.cmake

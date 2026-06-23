@@ -1,0 +1,194 @@
+#pragma once
+#include "player_class_Mat.h"
+#include <opencv2/opencv.hpp>
+#include <string>
+#include <array>
+#include <vector>
+
+class Sculpture
+{
+
+private:
+  bool direc_ = true;
+  bool fade_done_ = false;
+  Clock::time_point process_start_ = Clock::now();
+  float Fade_Time = 0.0f;
+
+  int *Sculpture_Map = nullptr;
+  uint16_t *Sampled_Buffer_RGB = nullptr;
+  uint16_t *Sampled_Buffer_RGBW = nullptr;
+  uint16_t *Sculpture_Data_Mapped = nullptr;
+
+  std::vector<std::vector<cv::Point>> Sample_Points_By_Row;
+
+  void Generate_Sample_Point_Map(void);
+
+public:
+  Sculpture();
+  // Sculpture(const std::string &filename, const std::string &tag);
+  Sculpture(const std::string &filename, const std::string &tag, const std::string &filename2, const std::string &tag2);
+
+  uint16_t *Sculpture_Data_Mapped_Params = nullptr;
+
+  bool Load_Params_From_Text_File(const std::string &filename, std::vector<int> &params);
+  bool Load_New_Movie(string path);
+  bool Save_Gui_Params_To_Text_File(const std::string &filename);
+  bool Save_Video_For_Tonight();
+  bool Read_Video_For_Tonight(bool Video_On_Time);
+  bool Load_LED_Corrections(const std::string& filename);
+  bool Force_Load_Movie_Now(const std::string& path);
+  
+  //*******************************  ON OFF SUNSET RELATED   ******************************************/
+
+  struct OnOffTime_Info
+  {
+    int day_of_year;
+
+    int on_hour_no_dst;
+    int on_minute_no_dst;
+    int on_minutes_since_6am_no_dst;
+
+    int on_hour_with_dst;   // for display
+    int on_minute_with_dst; // for display
+
+    int off_hour_no_dst;
+    int off_minute_no_dst;
+    int off_minutes_since_6am_no_dst;
+  };
+
+  struct CurrentTimeInfo
+  {
+    int minutes_since_6am_no_dst;
+
+    int current_hour_with_dst;    // for display
+    int current_minutes_with_dst; // for display
+  };
+
+  OnOffTime_Info On_Off_Time_Struct;
+  CurrentTimeInfo Current_Time_Struct;
+  int Minutes_Since_6AM(int hour, int minute);
+  bool Parse_Day_Of_Year(const std::string &date_string, int &day_of_year);
+  int Get_Day_Of_Year_No_Leap();
+  bool Load_Todays_On_Off_Time(const std::string &filename, OnOffTime_Info &today);
+  CurrentTimeInfo Get_Current_Time_Info();
+
+
+  //*******************************  ON OFF SUNSET RELATED   ******************************************/
+
+
+
+  bool Program_Start_Up;
+
+  bool Advance(std::array<cv::Mat, 4> &outputs);
+
+  // Return a const ref to an internal buffer
+  const cv::Mat &Fade_To_A(const cv::Mat &A, const cv::Mat &B, float fade_length_sec, bool &fade_done, bool &start_fade);
+
+  const cv::Mat &Cross_Fade(const cv::Mat &A, const cv::Mat &B, bool toA, float fade_length_sec, bool &fade_done);
+
+  void Save_Samples_Grid_To_Buffer_RGB(
+      const cv::Mat &ImageIn_F,    // CV_32FC3, source
+      cv::Mat &ImageSubSampled_F); // CV_32FC3, SCULPTURE_IMAGE_ROWS x SCULPTURE_IMAGE_COLS
+
+  void Save_Staggered_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
+
+  void Sample_To_Vector_16(const cv::Mat &ImageIn_F, std::vector<std::vector<cv::Vec3w>> &out);
+
+  // void Sample_To_Buffer_RGB_16(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
+
+  // void Sample_To_Buffer_RGB_16_Faster(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
+
+  void Sample_To_Buffer_RGBW_16_Faster(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
+
+  void Map_Data_To_Sculpture(uint16_t *Input_Sampled, uint16_t *Output_Mapped);
+
+  void Sample_To_Buffer_RGB_16_From_Map(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
+
+  void Show_Map_On_Display(cv::Mat &InOut);
+
+  void Write_Buffer_To_File_For_Test(const std::string &filename,
+                                     const void *data,
+                                     size_t element_size,
+                                     size_t element_count);
+
+  void Unique_DesMoines_Post_Mapped_Process(
+      uint16_t *Input_Sampled_Mapped,
+      uint16_t *Output_With_Params,
+      bool Enable_White_Inside,
+      bool Enable_Outside_Pixels,
+      uint8_t White_Die_Gain,
+      uint8_t Outside_Pixel_Gain,
+      uint8_t Splash_Timing_0,
+      uint8_t Splash_Timing_1,
+      uint8_t Splash_Timing_2,
+      uint8_t Splash_Timing_3,
+      uint8_t Xilinx_Timing,
+      uint8_t Red_Correct,
+      uint8_t Green_Correct,
+      uint8_t Blue_Correct,
+      uint8_t Control_Bits,
+      uint8_t Control_Bits_2);
+
+  bool Write_File;
+
+  long long Program_Frame_Count;
+
+  enum
+  {
+    CURRENT,
+    ON_DECK,
+    SWAP,
+    TOTAL_PLAYERS // bonus: gives you the array size
+  };
+
+  Video_Player_With_Processing VP[3];
+
+  std::vector<int> Mixer_Params;
+
+  Mat Cross_Faded_F;
+  Mat Main_Display_M;
+  Mat Down_Stream_Corrected_F;
+  Mat Downstream_Display_M;
+
+  Mat Cross_Faded_F_Sampled;
+  Mat Cross_Faded_M_Sampled;
+  Mat Sampled_Pre_Mapped_Test_2;
+
+  Mat Sampled_Pre_Mapped;
+
+  Mat Sampled_Pre_Mapped_Test;
+
+  int loop_counter;
+
+  std::string Current_Movie_Info_File;
+
+private:
+  cv::Mat image_mixed_; // internal reusable buffer
+  cv::Mat image_mixed_F;
+  float fade_level_ = 1.0f; // 0 = fully B, 1 = fully A
+
+  vector<vector<int>> Sample_Points_Map;
+
+  inline static const vector<int> Mixer_Params_Defaults{
+      75,  // GAIN
+      0,   // BLACK_LEVEL
+      100, // COLOR_GAIN
+      0,   // COLOR_HUE
+      100, // IMAGE_GAMMA
+      0,   // H_SHIFT
+      0,   // SPEED
+      0,   // H_ROTATE
+      0,   // FILTER_TYPE
+
+      0, // PAUSE_TOGGLE
+      0, // FAST_FORWARD
+      0, // REWIND
+      0  // QUIT
+
+  };
+
+  // bool direc_ = true;
+  // bool fade_done_ = false;
+  // Clock::time_point process_start_ = Clock::now();
+  // float temp_fade_ = 0.0f;
+};
