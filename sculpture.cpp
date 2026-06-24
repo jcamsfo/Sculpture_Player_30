@@ -662,8 +662,6 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         process_swap_delta_stored = GetDeltaTime(process_start_);
     }
 
-
-
     /******************************  IMAGE PROCESS BOTH IMAGES **************************/
     // VP[CURRENT].Process_New_Frame_Ext_Process();
     // VP[ON_DECK].Process_New_Frame_Ext_Process();
@@ -678,9 +676,6 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     auto process_image_processing_both = GetDeltaTime(process_start_);
 
-
-
-
     Fade_Time = 2.0;
 
     // Fade to New Image when triggered  Float Image In Res
@@ -689,15 +684,13 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     // Convert Cross_Faded_F for Display
     Cross_Faded_F.convertTo(Main_Display_M, CV_8UC3); // Main Visual Output to Screen
 
-
     auto pre_dwn_stream = GetDeltaTime(process_start_);
-
 
     auto ds_start = Clock::now();
 
     // // Downstream LED Correction and shift on full size image  Note output could be same as input
     // Mixer_Params[H_SHIFT] = 100;
-    Down_Stream_Corrected_F = process_image_with_shift(Cross_Faded_F, Mixer_Params); // Sculpture Res
+    process_image_with_shift_float(Cross_Faded_F, Down_Stream_Corrected_F, Mixer_Params); // Sculpture Res
 
     auto ds = GetDeltaTime(ds_start);
 
@@ -772,11 +765,11 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     if ((loop_counter % 30 == 0) && PRINT_TIMING)
         cout << "process_all_delta  " << process_all_delta << "    "
-                     << "pre_dwn_str  " << pre_dwn_stream << "    "
-        
+             << "pre_dwn_str  " << pre_dwn_stream << "    "
+
              << "ds  " << ds << "    "
-             << "sho_map  " << after_sho_map << "    "             
-             
+             << "sho_map  " << after_sho_map << "    "
+
              << "swap  " << process_swap_delta_stored << "    "
              << "sampler  " << process_sampler_delta << "    "
              << "image_processing_both  " << process_image_processing_both << endl;

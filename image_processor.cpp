@@ -1,61 +1,78 @@
 #include "image_processor.h"
-#include <algorithm>
-#include <cmath>
 #include <vector>
 #include "globals.h"
 #include "measure2.h"
 
-static inline int odd_or_next(int k) { return (k >= 3) ? (k | 1) : 1; }
 
-// -------- Shift (no double-copy, handles in-place safely) --------
-void h_shift(const cv::Mat &ImageIn_U, cv::Mat &ImageOut_U, int shift_px)
+// for downstream LED Correction
+void h_shift_float(const cv::Mat &src, cv::Mat &dst, int shift_px)
 {
-  CV_Assert(ImageIn_U.type() == CV_8UC3 || ImageIn_U.type() == CV_32FC3);
+  CV_Assert(src.type() == CV_32FC3);
+  CV_Assert(!src.empty());
 
-  if (ImageIn_U.empty())
-  {
-    ImageOut_U.release();
-    return;
-  }
+  const int W = src.cols;
+  const int H = src.rows;
 
-  const int W = ImageIn_U.cols;
-  const int H = ImageIn_U.rows;
-  if (W <= 0)
-  {
-    ImageOut_U.release();
-    return;
-  }
-
-  // Normalize shift into [0, W)
   int s = shift_px % W;
   if (s < 0)
     s += W;
 
-  // Fast path for zero shift
+  dst.create(src.size(), src.type());
+
+  CV_Assert(src.data != dst.data); // no in-place shifting
+
   if (s == 0)
   {
-    if (ImageIn_U.data != ImageOut_U.data)
-      ImageIn_U.copyTo(ImageOut_U);
+    src.copyTo(dst);
     return;
   }
 
-  // Detect alias *before* create()
-  const bool alias = (ImageOut_U.data == ImageIn_U.data);
+  src(cv::Rect(W - s, 0, s, H))
+      .copyTo(dst(cv::Rect(0, 0, s, H)));
 
-  // Ensure dst has right size/type
-  ImageOut_U.create(ImageIn_U.size(), ImageIn_U.type());
+  src(cv::Rect(0, 0, W - s, H))
+      .copyTo(dst(cv::Rect(s, 0, W - s, H)));
+}
 
-  // If aliasing, take a safe copy of the source
-  cv::Mat SafeSrc;
-  const cv::Mat &Src = alias ? (ImageIn_U.copyTo(SafeSrc), SafeSrc) : ImageIn_U;
+// For player class
+void h_shift_u8(const cv::Mat &src, cv::Mat &dst, int shift_px)
+{
+  CV_Assert(src.type() == CV_8UC3);
 
-  // Left and right source regions
-  const cv::Rect rLeft(0, 0, W - s, H);
-  const cv::Rect rRight(W - s, 0, s, H);
+  if (src.empty())
+  {
+    dst.release();
+    return;
+  }
 
-  // Place right chunk at the left, left chunk after it
-  Src(rRight).copyTo(ImageOut_U(cv::Rect(0, 0, s, H)));
-  Src(rLeft).copyTo(ImageOut_U(cv::Rect(s, 0, W - s, H)));
+  const int W = src.cols;
+  const int H = src.rows;
+
+  int s = shift_px % W;
+  if (s < 0)
+    s += W;
+
+  if (s == 0)
+  {
+    if (src.data != dst.data)
+      src.copyTo(dst);
+    return;
+  }
+
+  // Check alias BEFORE dst.create()
+  const bool alias = (src.data == dst.data);
+
+  dst.create(src.size(), src.type());
+
+  cv::Mat safe_src;
+  const cv::Mat &read_src =
+      alias ? (src.copyTo(safe_src), safe_src) : src;
+
+  read_src(cv::Rect(W - s, 0, s, H))
+      .copyTo(dst(cv::Rect(0, 0, s, H)));
+
+  read_src(cv::Rect(0, 0, W - s, H))
+      .copyTo(dst(cv::Rect(s, 0, W - s, H)));
 }
 
 // -------- Blur (unchanged API, tiny guard) --------
@@ -124,77 +141,28 @@ void process_pixels(cv::Mat &ImageIn_F, const std::vector<int> &local_params)
     } });
 }
 
-// -------- Stateless pipeline (single Mat in/out) --------
-// standalone processor (non-class)
-// use for mixer out etc  not the player
-// 8-bit or 32F in, always 32F out (non-class, with optional shift)
-cv::Mat process_image_with_shift(const cv::Mat &ImageIn,
-                                 const std::vector<int> &local_params)
+
+// for downstream LED Correction
+void process_image_with_shift_float(const cv::Mat &src,
+                                    cv::Mat &dst,
+                                    const std::vector<int> &p)
 {
-  CV_Assert(ImageIn.type() == CV_8UC3 || ImageIn.type() == CV_32FC3);
+  CV_Assert(src.type() == CV_32FC3);
 
-  // Optional shift first, using the input's native type
-  const cv::Mat *src = &ImageIn;
-  cv::Mat shifted;
-  if (local_params[H_SHIFT] != 0)
-  {
-    h_shift(ImageIn, shifted, local_params[H_SHIFT]); // alias-safe
-    src = &shifted;
-  }
-
-  // Ensure float working buffer
-  cv::Mat workF;
-  if (src->type() == CV_8UC3)
-  {
-    src->convertTo(workF, CV_32FC3);
-  }
+  if (p[H_SHIFT] != 0)
+    h_shift_float(src, dst, p[H_SHIFT]);
   else
-  {
-    // Safer: clone so we don't mutate caller's buffer
-    workF = src->clone();
-    // If you prefer zero-copy and don't mind mutating input: workF = *src;
-  }
+    src.copyTo(dst);
 
-  // Pixel math in 32F
-  process_pixels(workF, local_params);
+  process_pixels(dst, p);
 
-  // Optional blur in 32F
-  if (local_params[FILTER_TYPE])
-    gauss_blur_inplace(workF, local_params[FILTER_TYPE]);
-
-  return workF; // CV_32FC3
+  if (p[FILTER_TYPE])
+    gauss_blur_inplace(dst, p[FILTER_TYPE]);
 }
 
 
 
-
-
-
-
-// 8 bits in float out  non class no shifter
-cv::Mat process_image(const cv::Mat &ImageIn_U,
-                      const std::vector<int> &local_params)
-{
-  CV_Assert(ImageIn_U.type() == CV_8UC3);
-
-  cv::Mat Image_Processed_F_Local;
-  Image_Processed_F_Local.create(ImageIn_U.size(), CV_32FC3); // ensures shape/type
-  ImageIn_U.convertTo(Image_Processed_F_Local, CV_32FC3);     // reuses buffer if same size
-
-  auto process_start = Clock::now();
-
-  process_pixels(Image_Processed_F_Local, local_params);
-
-  auto process_delta = GetDeltaTime(process_start);
-  std::cout << "Elapsed Para: " << process_delta << " us\n";
-
-  if (local_params[FILTER_TYPE])
-    gauss_blur_inplace(Image_Processed_F_Local, local_params[FILTER_TYPE]);
-
-  return Image_Processed_F_Local;
-}
-
-// class version faster  (checked it...not much faster 200 usecs maybe)
+// class version faster  (checked it...not much faster 200 usecs maybe)  for use in player class only
 Image_Processor::Image_Processor(int rows, int cols)
 {
   ShiftedTemp.create(rows, cols, CV_8UC3);
@@ -207,7 +175,6 @@ cv::Mat &Image_Processor::Process_Image(const cv::Mat &ImageIn_U,
 {
   CV_Assert(ImageIn_U.type() == CV_8UC3);
 
-  
   auto process_total = Clock::now();
 
   // 8U -> 32F
@@ -228,32 +195,3 @@ cv::Mat &Image_Processor::Process_Image(const cv::Mat &ImageIn_U,
 
   return Image_Processed_F;
 }
-
-// the class is barely faster (maybe better for threading ?? !!!
-
-// chat:
-
-// the class is faster and more predictable in a video loop. Here’s why:
-
-// What the class buys you (vs the free function)
-//   No per-frame allocations
-//   1080p CV_32FC3 scratch ≈ 24 MB. Allocating/freeing that every frame at 60 fps is ~1.4 GB/s of allocator traffic + fragmentation.
-//   In the class you allocate ShiftedTemp (8U) and Image_Processed_F (32F) once and reuse them. convertTo writes into your pre-created buffer, so no hidden re-alloc.
-
-// Stable frame times (low jitter)
-//   Heap allocs are spiky. Reusing buffers makes frame time consistent, which matters for smooth playback.
-
-// Cache friendliness
-//   Reusing the same buffers improves cache locality vs constantly getting fresh pages.
-
-// Easy multi-threading
-//   One ImageProcessor per thread → no shared state. The free function is thread-safe too, but the class keeps each thread’s scratch separate without passing temporaries around.
-
-// A place for extras later
-//   You can stash precomputed LUTs, separable kernels, GPU buffers, or switch the internals to UMat/GpuMat without touching the call sites.
-
-// When to use which
-//   Video player path (every frame): use the class process_image(...).
-//   One-off tools / tests / offline scripts: the free function is fine.
-
-// So, called from your video player, the class version is faster (less allocator work), smoother (less jitter), and scales better. The free function is perfect for convenience elsewhere.

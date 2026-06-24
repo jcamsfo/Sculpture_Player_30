@@ -3,10 +3,7 @@
 
 #include "globals.h"
 #include "config.h"
-#include "function_misc.h"
 #include "player_class_Mat.h"
-#include "fs_utils.h"
-#include "globals.h"
 #include "image_processor.h"
 
 
@@ -286,9 +283,10 @@ void Video_Player_With_Processing::H_Shift_Rotate(const cv::Mat &ImageIn_U,
       ImageIn_U.copyTo(ImageOut_U);
     return;
   }
-  h_shift(ImageIn_U, ImageOut_U, Final_Shift);
+  // h_shift(ImageIn_U, ImageOut_U, Final_Shift);
+  h_shift_u8(ImageIn_U, ImageOut_U, Final_Shift);
 
-  ImageOut_U = ImageIn_U.clone();
+  // ImageOut_U = ImageIn_U.clone();
 }
 
 void Video_Player_With_Processing::Process_New_Frame_Ext_Process(void)
