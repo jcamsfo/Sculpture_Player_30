@@ -35,9 +35,9 @@ public:
   bool Save_Gui_Params_To_Text_File(const std::string &filename);
   bool Save_Video_For_Tonight();
   bool Read_Video_For_Tonight(bool Video_On_Time);
-  bool Load_LED_Corrections(const std::string& filename);
-  bool Force_Load_Movie_Now(const std::string& path);
-  
+  bool Load_LED_Corrections(const std::string &filename);
+  bool Force_Load_Movie_Now(const std::string &path);
+
   //*******************************  ON OFF SUNSET RELATED   ******************************************/
 
   struct OnOffTime_Info
@@ -72,31 +72,19 @@ public:
   bool Load_Todays_On_Off_Time(const std::string &filename, OnOffTime_Info &today);
   CurrentTimeInfo Get_Current_Time_Info();
 
-
   //*******************************  ON OFF SUNSET RELATED   ******************************************/
-
-
 
   bool Program_Start_Up;
 
   bool Advance(std::array<cv::Mat, 4> &outputs);
 
   // Return a const ref to an internal buffer
-  const cv::Mat &Fade_To_A(const cv::Mat &A, const cv::Mat &B, float fade_length_sec, bool &fade_done, bool &start_fade);
+  void Fade_To_A(const cv::Mat &A, const cv::Mat &B, cv::Mat &dst, float fade_length_sec, bool &fade_done, bool &start_fade);
 
-  const cv::Mat &Cross_Fade(const cv::Mat &A, const cv::Mat &B, bool toA, float fade_length_sec, bool &fade_done);
-
-  void Save_Samples_Grid_To_Buffer_RGB(
-      const cv::Mat &ImageIn_F,    // CV_32FC3, source
-      cv::Mat &ImageSubSampled_F); // CV_32FC3, SCULPTURE_IMAGE_ROWS x SCULPTURE_IMAGE_COLS
+  // CV_32FC3, source // CV_32FC3, SCULPTURE_IMAGE_ROWS x SCULPTURE_IMAGE_COLS
+  void Save_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
 
   void Save_Staggered_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
-
-  void Sample_To_Vector_16(const cv::Mat &ImageIn_F, std::vector<std::vector<cv::Vec3w>> &out);
-
-  // void Sample_To_Buffer_RGB_16(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
-
-  // void Sample_To_Buffer_RGB_16_Faster(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
 
   void Sample_To_Buffer_RGBW_16_Faster(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
 
