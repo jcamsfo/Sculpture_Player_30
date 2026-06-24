@@ -679,7 +679,7 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     Fade_Time = 2.0;
 
     // Fade to New Image when triggered  Float Image In Res
-    Cross_Faded_F = Fade_To_A(VP[CURRENT].ImageMain_FM, VP[ON_DECK].ImageMain_FM, Fade_Time, fade_done_, start_fade);
+    Fade_To_A(VP[CURRENT].ImageMain_FM, VP[ON_DECK].ImageMain_FM, Cross_Faded_F, Fade_Time, fade_done_, start_fade);
 
     // Convert Cross_Faded_F for Display
     Cross_Faded_F.convertTo(Main_Display_M, CV_8UC3); // Main Visual Output to Screen
@@ -779,29 +779,34 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     return true;
 }
 
-// fade to a only
-const cv::Mat &Sculpture::Fade_To_A(const cv::Mat &A, const cv::Mat &B, float fade_length_sec, bool &fade_done, bool &start_fade_local)
+void Sculpture::Fade_To_A(const cv::Mat &A, const cv::Mat &B, cv::Mat &dst, float fade_length_sec, bool &fade_done, bool &start_fade_local)
 {
     CV_Assert(A.size() == B.size() && A.type() == B.type());
 
-    image_mixed_.create(A.size(), A.type()); // ensure buffer shape/type
+    dst.create(A.size(), A.type());
 
-    // advance fade toward target
-    const float step = (fade_length_sec > 0.f) ? (1.0f / (fade_length_sec * FPS)) : 1.0f;
+    const float step =
+        (fade_length_sec > 0.f)
+            ? (1.0f / (fade_length_sec * FPS))
+            : 1.0f;
 
     if (start_fade_local)
-        fade_level_ = 0;
+    {
+        fade_level_ = 0.0f;
+    }
     else
     {
-        // fade_level_ += toA ? +step : -step;
         fade_level_ += step;
         fade_level_ = std::clamp(fade_level_, 0.0f, 1.0f);
-        // start_fade_local = false;
     }
 
     fade_done = (fade_level_ >= 1.0f);
-    cv::addWeighted(A, fade_level_, B, 1.0f - fade_level_, 0.0, image_mixed_);
-    return image_mixed_;
+
+    cv::addWeighted(
+        A, fade_level_,
+        B, 1.0f - fade_level_,
+        0.0,
+        dst);
 }
 
 void Sculpture::Show_Map_On_Display(cv::Mat &InOut)
@@ -1047,312 +1052,3 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
         *(Output_With_Params + New_Parameters_Start + Parameters_Offset + 5) = Control_Bits_2;
     }
 }
-
-// if (Program_Frame_Counter == 100)
-// {
-//      cout << endl;
-//     for (int i = 0; i < 8; i++)
-//         cout << ( (*(ActiveBuffer + New_Parameters_Start + i)) & 0x0f )
-//              << std::endl
-//              << (((*(ActiveBuffer + New_Parameters_Start + i)) >> 8) & 0x0f )
-//              << std::endl ;
-//     exit(0);
-// }
-
-// void Sculpture::Sample_To_Buffer_RGB_16_Faster(
-//     const cv::Mat &ImageIn_F,
-//     uint16_t *Sampled_Buffer_RGB)
-// {
-//     CV_Assert(ImageIn_F.type() == CV_32FC3);
-
-//     auto clampi = [](int v, int lo, int hi)
-//     { return (v < lo) ? lo : (v > hi) ? hi
-//                                       : v; };
-
-//     auto f_to_u16 = [](float v) -> uint16_t
-//     {
-//         v *= 256.0f;
-//         if (v < 0.0f)
-//             return 0;
-//         if (v > 65535.0f)
-//             return 65535;
-//         return static_cast<uint16_t>(v + 0.5f);
-//     };
-
-//     float row_f = V_GAP * 0.5f;
-
-//     for (int row_out = 0; row_out < SCULPTURE_IMAGE_ROWS; ++row_out)
-//     {
-//         int row_in = clampi(int(row_f + 0.5f), 0, SCREEN_IMAGE_ROWS - 1);
-//         const cv::Vec3f *src_row = ImageIn_F.ptr<cv::Vec3f>(row_in);
-//         float h_phase = (STAGGER_TYPE == NO_STAGGER) ? 0.5f : (STAGGER_TYPE == TOP_ROW_LEFT) ? 0.25f
-//                                                                                              : 0.75f;
-//         if (row_out & 1)
-//             h_phase = 1.0f - h_phase;
-
-//         float col_f = h_phase * H_GAP;
-//         uint16_t *dst = Sampled_Buffer_RGB + row_out * SCULPTURE_IMAGE_COLS * 3;
-
-//         for (int col_out = 0; col_out < SCULPTURE_IMAGE_COLS; ++col_out)
-//         {
-//             int col_in = clampi(int(col_f + 0.5f), 0, SCREEN_IMAGE_COLS - 1);
-//             const cv::Vec3f &pix = src_row[col_in];
-
-//             dst[0] = f_to_u16(pix[0]); // B
-//             dst[1] = f_to_u16(pix[1]); // G
-//             dst[2] = f_to_u16(pix[2]); // R
-
-//             dst += 3;
-//             col_f += H_GAP;
-//         }
-//         row_f += V_GAP;
-//     }
-// }
-
-// void Sculpture::Sample_To_Buffer_RGBW_16_Faster(
-//     const cv::Mat &ImageIn_F,
-//     uint16_t *Sampled_Buffer_RGBW)
-// {
-//     CV_Assert(ImageIn_F.type() == CV_32FC3);
-
-//     auto clampi = [](int v, int lo, int hi)
-//     { return (v < lo) ? lo : (v > hi) ? hi
-//                                       : v; };
-
-//     auto f_to_u16 = [](float v) -> uint16_t
-//     {
-//         v *= 256.0f;
-//         if (v < 0.0f)
-//             return 0;
-//         if (v > 65535.0f)
-//             return 65535;
-//         return static_cast<uint16_t>(v + 0.5f);
-//     };
-
-//     float row_f = V_GAP * 0.5f;
-
-//     for (int row_out = 0; row_out < SCULPTURE_IMAGE_ROWS; ++row_out)
-//     {
-//         int row_in = clampi(int(row_f + 0.5f), 0, SCREEN_IMAGE_ROWS - 1);
-//         const cv::Vec3f *src_row = ImageIn_F.ptr<cv::Vec3f>(row_in);
-//         float h_phase = (STAGGER_TYPE == NO_STAGGER) ? 0.5f : (STAGGER_TYPE == TOP_ROW_LEFT) ? 0.25f
-//                                                                                              : 0.75f;
-//         if (row_out & 1)
-//             h_phase = 1.0f - h_phase;
-
-//         float col_f = h_phase * H_GAP;
-//         uint16_t *dst = Sampled_Buffer_RGBW + row_out * SCULPTURE_IMAGE_COLS * 4;
-
-//         for (int col_out = 0; col_out < SCULPTURE_IMAGE_COLS; ++col_out)
-//         {
-//             int col_in = clampi(int(col_f + 0.5f), 0, SCREEN_IMAGE_COLS - 1);
-//             const cv::Vec3f &pix = src_row[col_in];
-
-//             uint16_t b = f_to_u16(pix[0]);
-//             uint16_t g = f_to_u16(pix[1]);
-//             uint16_t r = f_to_u16(pix[2]);
-//             uint16_t minRGB = std::min(b, std::min(g, r));
-//             dst[0] = b - minRGB; // B
-//             dst[1] = g - minRGB; // G
-//             dst[2] = r - minRGB; // R
-//             dst[3] = minRGB;     // W
-
-//             dst += 4;
-//             col_f += H_GAP;
-//         }
-
-//         row_f += V_GAP;
-//     }
-// }
-
-// fade fram a to b and b to a
-// const cv::Mat &Sculpture::Cross_Fade(const cv::Mat &A, const cv::Mat &B, bool toA, float fade_length_sec, bool &fade_done)
-// {
-//     CV_Assert(A.size() == B.size() && A.type() == B.type());
-
-//     // ensure buffer shape/type
-//     image_mixed_.create(A.size(), A.type());
-
-//     // advance fade toward target
-//     const float step = (fade_length_sec > 0.f) ? (1.0f / (fade_length_sec * FPS)) : 1.0f;
-
-//     fade_level_ += toA ? +step : -step;
-//     fade_level_ = std::clamp(fade_level_, 0.0f, 1.0f);
-
-//     fade_done = toA
-//                     ? (fade_level_ >= 1.0f)
-//                     : (fade_level_ <= 0.0f);
-
-//     cv::addWeighted(A, fade_level_, B, 1.0f - fade_level_, 0.0, image_mixed_);
-//     return image_mixed_;
-// }
-
-// void Sculpture::Sample_To_Buffer_RGB_16(
-//     const cv::Mat &ImageIn_F,
-//     uint16_t *Sampled_Buffer_RGB)
-// {
-//     CV_Assert(ImageIn_F.type() == CV_32FC3);
-
-//     // 1. convert to 16-bit
-//     cv::Mat Image16;
-//     ImageIn_F.convertTo(Image16, CV_16UC3, 256.0);
-
-//     auto clampi = [](int v, int lo, int hi)
-//     { return (v < lo) ? lo : (v > hi) ? hi
-//                                       : v; };
-
-//     float row_f = V_GAP * 0.5f;
-
-//     for (int row_out = 0; row_out < SCULPTURE_IMAGE_ROWS; ++row_out)
-//     {
-//         int row_in = int(row_f + 0.5f);
-//         row_in = clampi(row_in, 0, SCREEN_IMAGE_ROWS - 1);
-
-//         const cv::Vec3w *src_row = Image16.ptr<cv::Vec3w>(row_in);
-
-//         float h_phase = (STAGGER_TYPE == NO_STAGGER) ? 0.5f : (STAGGER_TYPE == TOP_ROW_LEFT) ? 0.25f
-//                                                                                              : 0.75f;
-//         if (row_out & 1)
-//             h_phase = 1.0f - h_phase;
-
-//         float col_f = h_phase * H_GAP;
-
-//         for (int col_out = 0; col_out < SCULPTURE_IMAGE_COLS; ++col_out)
-//         {
-//             int col_in = int(col_f + 0.5f);
-//             col_in = clampi(col_in, 0, SCREEN_IMAGE_COLS - 1);
-
-//             const cv::Vec3w &pix = src_row[col_in];
-
-//             // flat index (3 values per pixel)
-//             int idx = (row_out * SCULPTURE_IMAGE_COLS + col_out) * 3;
-
-//             Sampled_Buffer_RGB[idx + 0] = pix[0]; // B
-//             Sampled_Buffer_RGB[idx + 1] = pix[1]; // G
-//             Sampled_Buffer_RGB[idx + 2] = pix[2]; // R
-
-//             col_f += H_GAP;
-//         }
-//         row_f += V_GAP;
-//     }
-// }
-
-// // straight grid sampling
-// void Sculpture::Save_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F)
-// {
-//     CV_Assert(ImageIn_F.type() == CV_32FC3);
-
-//     // Allocate/reuse output
-//     ImageSubSampled_F.create(SCULPTURE_IMAGE_ROWS, SCULPTURE_IMAGE_COLS, CV_32FC3);
-
-//     // Centered sampling
-//     float row_f = V_GAP * 0.5f;
-
-//     for (int row_out = 0; row_out < SCULPTURE_IMAGE_ROWS; ++row_out)
-//     {
-//         const int row_in = int(row_f + 0.5f); // guaranteed in-range by your contract
-
-//         const cv::Vec3f *src_row = ImageIn_F.ptr<cv::Vec3f>(row_in);
-//         cv::Vec3f *dst_row = ImageSubSampled_F.ptr<cv::Vec3f>(row_out);
-
-//         float col_f = H_GAP * 0.5f;
-
-//         for (int col_out = 0; col_out < SCULPTURE_IMAGE_COLS; ++col_out)
-//         {
-//             const int col_in = int(col_f + 0.5f); // guaranteed in-range
-//             dst_row[col_out] = src_row[col_in];
-//             // cout <<  "col_in " <<  col_in  << endl;
-//             col_f += H_GAP;
-//         }
-//         row_f += V_GAP;
-//         // cout << "col_in " << row_in << endl;
-//     }
-// }
-
-// // straight and staggered h and v grid sampling
-// void Sculpture::Save_Staggered_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F)
-// {
-//     CV_Assert(ImageIn_F.type() == CV_32FC3);
-
-//     ImageSubSampled_F.create(SCULPTURE_IMAGE_ROWS, SCULPTURE_IMAGE_COLS, CV_32FC3);
-
-//     auto clampi = [](int v, int lo, int hi)
-//     { return (v < lo) ? lo : (v > hi) ? hi
-//                                       : v; };
-
-//     if (STAGGER_TYPE <= 2)
-//     {
-//         float row_f = V_GAP * 0.5f;
-
-//         for (int row_out = 0; row_out < SCULPTURE_IMAGE_ROWS; ++row_out)
-//         {
-//             int row_in = int(row_f + 0.5f);
-//             row_in = clampi(row_in, 0, SCREEN_IMAGE_ROWS - 1);
-
-//             const cv::Vec3f *src_row = ImageIn_F.ptr<cv::Vec3f>(row_in);
-//             cv::Vec3f *dst_row = ImageSubSampled_F.ptr<cv::Vec3f>(row_out);
-
-//             float h_phase = (STAGGER_TYPE == NO_STAGGER) ? 0.5f : (STAGGER_TYPE == TOP_ROW_LEFT) ? 0.25f
-//                                                                                                  : 0.75f; // ELSE TOP_ROW_RIGHT
-//             if (row_out & 1)
-//                 h_phase = 1.0f - h_phase;
-
-//             float col_f = h_phase * H_GAP;
-
-//             for (int col_out = 0; col_out < SCULPTURE_IMAGE_COLS; ++col_out)
-//             {
-//                 int col_in = int(col_f + 0.5f);
-//                 col_in = clampi(col_in, 0, SCREEN_IMAGE_COLS - 1);
-
-//                 dst_row[col_out] = src_row[col_in];
-//                 // if ((row_in >= 276) || (row_in <= 2))
-//                 // cout << " row_in " << row_in << "   col_in " << col_in << endl;
-//                 col_f += H_GAP;
-//             }
-//             row_f += V_GAP;
-//         }
-//     }
-//     else
-//     {
-//         // vertical stagger by column
-//         // Pick a base phase (0.25 or 0.75) and flip for odd columns.
-//         float v_phase = (STAGGER_TYPE == LEFT_COLUMN_UP) ? 0.25f : 0.75f; // ELSE LEFT_COLUMN_DOWN
-
-//         for (int row_out = 0; row_out < SCULPTURE_IMAGE_ROWS; ++row_out)
-//         {
-//             cv::Vec3f *dst_row = ImageSubSampled_F.ptr<cv::Vec3f>(row_out);
-
-//             // Center of this output row in source space
-//             float row_center_f = (row_out + 0.5f) * V_GAP;
-
-//             // Horizontal: normal centered sampling
-//             float col_f = H_GAP * 0.5f;
-
-//             for (int col_out = 0; col_out < SCULPTURE_IMAGE_COLS; ++col_out)
-//             {
-//                 float v_phase_local = v_phase;
-//                 if (col_out & 1)
-//                     v_phase_local = 1.0f - v_phase_local;
-
-//                 // Convert phase into an offset around the center:
-//                 // phase 0.25 => offset -0.25*V_GAP
-//                 // phase 0.75 => offset +0.25*V_GAP
-//                 float row_f = row_center_f + (v_phase_local - 0.5f) * V_GAP;
-
-//                 int row_in = int(row_f + 0.5f);
-//                 row_in = clampi(row_in, 0, SCREEN_IMAGE_ROWS - 1);
-
-//                 int col_in = int(col_f + 0.5f);
-//                 col_in = clampi(col_in, 0, SCREEN_IMAGE_COLS - 1);
-
-//                 const cv::Vec3f *src_row = ImageIn_F.ptr<cv::Vec3f>(row_in);
-//                 dst_row[col_out] = src_row[col_in];
-
-//                 // if( ((row_in >= 276) || ( row_in <= 3) ) && ((col_in >= 986) || ( col_in <= 10) ) )
-//                 //                 cout << " row_in " << row_in << "   col_in " << col_in << endl;
-
-//                 col_f += H_GAP;
-//             }
-//         }
-//     }
-// }
