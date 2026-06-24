@@ -81,7 +81,6 @@ Sculpture::Sculpture(const std::string &filename, const std::string &tag, const 
 
     Load_LED_Corrections("swirl_files/LED_Corrections.txt");
 
-
     Sculpture_Map = new int[SCULPTURE_MAPPED_SIZE_RGBW];
 
     Sampled_Buffer_RGB = new uint16_t[SCULPTURE_SIZE_RGB];
@@ -303,8 +302,7 @@ Sculpture::CurrentTimeInfo Sculpture::Get_Current_Time_Info()
     return info;
 }
 
-
-bool Sculpture::Force_Load_Movie_Now(const std::string& path)
+bool Sculpture::Force_Load_Movie_Now(const std::string &path)
 {
     VP[CURRENT].Close_Image_File();
     VP[CURRENT].Open_Image_File_Mat(path, "main image");
@@ -607,7 +605,7 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     // compare current time to turn on time
     Video_On_Time = (Current_Time_Struct.minutes_since_6am_no_dst >= On_Off_Time_Struct.on_minutes_since_6am_no_dst &&
                      Current_Time_Struct.minutes_since_6am_no_dst <= On_Off_Time_Struct.off_minutes_since_6am_no_dst);
-    
+
     // Load tonights video or black depending on current time
     if (Program_Start_Up)
     {
@@ -630,13 +628,11 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     }
     Video_On_Time_Delayed = Video_On_Time;
 
+    // if (Prog_Frame_Counter % 30 == 0)
+    //     cout << " \n\n curr " << Current_Time_Struct.minutes_since_6am_no_dst << "   comp " << On_Off_Time_Struct.on_minutes_since_6am_no_dst << endl
+    //          << endl;
 
-
-    if (Prog_Frame_Counter % 30 == 0)
-        cout << " \n\n curr " << Current_Time_Struct.minutes_since_6am_no_dst << "   comp " << On_Off_Time_Struct.on_minutes_since_6am_no_dst << endl
-             << endl;
-
-    // save params for the current image from the gui 
+    // save params for the current image from the gui
     if (g_gui_save_image_params.exchange(false))
     {
         if (!Current_Movie_Info_File.empty())
@@ -647,7 +643,7 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         }
     }
 
-     // save the current image to be played tonight   
+    // save the current image to be played tonight
     if (g_gui_save_video_for_tonight.exchange(false))
     {
         Save_Video_For_Tonight();
@@ -667,6 +663,7 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     }
 
 
+
     /******************************  IMAGE PROCESS BOTH IMAGES **************************/
     // VP[CURRENT].Process_New_Frame_Ext_Process();
     // VP[ON_DECK].Process_New_Frame_Ext_Process();
@@ -681,10 +678,8 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     auto process_image_processing_both = GetDeltaTime(process_start_);
 
-    // cout << loop_counter << endl;
 
-    if (loop_counter % 120 == 0 && loop_counter != 0)
-        direc_ = !direc_;
+
 
     Fade_Time = 2.0;
 
@@ -694,9 +689,17 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     // Convert Cross_Faded_F for Display
     Cross_Faded_F.convertTo(Main_Display_M, CV_8UC3); // Main Visual Output to Screen
 
+
+    auto pre_dwn_stream = GetDeltaTime(process_start_);
+
+
+    auto ds_start = Clock::now();
+
     // // Downstream LED Correction and shift on full size image  Note output could be same as input
     // Mixer_Params[H_SHIFT] = 100;
     Down_Stream_Corrected_F = process_image_with_shift(Cross_Faded_F, Mixer_Params); // Sculpture Res
+
+    auto ds = GetDeltaTime(ds_start);
 
     // // Shrink to a size that's close to the output res and convert to downstream display
     Down_Stream_Corrected_F.convertTo(Downstream_Display_M, CV_8UC3);
@@ -710,6 +713,8 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     Map_Data_To_Sculpture(Sampled_Buffer_RGB, Sculpture_Data_Mapped);
 
     Show_Map_On_Display(Main_Display_M);
+
+    auto after_sho_map = GetDeltaTime(process_start_);
 
     Unique_DesMoines_Post_Mapped_Process(
         Sculpture_Data_Mapped,        // uint16_t *Input_Sampled_Mapped,
@@ -767,9 +772,14 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     if ((loop_counter % 30 == 0) && PRINT_TIMING)
         cout << "process_all_delta  " << process_all_delta << "    "
-             << "process_swap_delta  " << process_swap_delta_stored << "    "
-             << "process_sampler_delta  " << process_sampler_delta << "    "
-             << "process_image_processing_both  " << process_image_processing_both << endl;
+                     << "pre_dwn_str  " << pre_dwn_stream << "    "
+        
+             << "ds  " << ds << "    "
+             << "sho_map  " << after_sho_map << "    "             
+             
+             << "swap  " << process_swap_delta_stored << "    "
+             << "sampler  " << process_sampler_delta << "    "
+             << "image_processing_both  " << process_image_processing_both << endl;
 
     Program_Frame_Count++;
     loop_counter++;

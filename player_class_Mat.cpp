@@ -233,6 +233,9 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
   // If paused, Current_Frame stays where it was last advanced (good)
 }
 
+
+
+
 void Video_Player_With_Processing::copy_params_from_gui_player()
 {
   Player_Params[GAIN] = g_gui_params.Gain.load();

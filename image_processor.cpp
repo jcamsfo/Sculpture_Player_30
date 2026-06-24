@@ -165,6 +165,12 @@ cv::Mat process_image_with_shift(const cv::Mat &ImageIn,
   return workF; // CV_32FC3
 }
 
+
+
+
+
+
+
 // 8 bits in float out  non class no shifter
 cv::Mat process_image(const cv::Mat &ImageIn_U,
                       const std::vector<int> &local_params)

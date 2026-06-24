@@ -194,7 +194,7 @@ int video_processor_main(void)
 
     // shut down black video
     SC.Force_Load_Movie_Now("swirl_files/black.mov");
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 5; i++)
     {
         SC.Advance(Main_Display);
         FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
