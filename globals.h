@@ -91,6 +91,11 @@ inline std::atomic<int> start_up_mins{0};
 inline std::atomic<bool> g_start_up_time_changed{false};
 
 
+inline std::atomic<int> current_hours{0};
+inline std::atomic<int> current_mins{0};
+inline std::atomic<bool> g_current_time_changed{false};
+
+
 
 
 

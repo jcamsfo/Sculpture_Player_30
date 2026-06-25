@@ -246,14 +246,14 @@ ControlPanelWindow::ControlPanelWindow()
         /*after*/ false);
     button_box.append(_print_button);
 
-    _copy_button.set_label("Save Video for Tonight");
+    _copy_button.set_label("SAVE VIDEO FOR TONIGHT");
 
     _copy_button.set_name("btn_copy");
     _copy_button.signal_clicked().connect(
         sigc::mem_fun(*this, &ControlPanelWindow::_onSaveVideoForTonightClicked),
         /*after*/ false);
     button_box.append(_copy_button);
-    _reset_button.set_label("Reset");
+    _reset_button.set_label("RESET");
     _reset_button.set_name("btn_reset");
     _reset_button.signal_clicked().connect(
         sigc::mem_fun(*this, &ControlPanelWindow::_onResetButtonClicked),
@@ -269,13 +269,24 @@ ControlPanelWindow::ControlPanelWindow()
 
     _scroll_vbox.append(_tonights_movie_label);
 
-    _turn_on_time_label.set_text("Turn On Time: --:--");
+    Gtk::Box time_row(Gtk::Orientation::HORIZONTAL, 24);
+    time_row.set_margin_top(10);
+
+    _turn_on_time_label.set_text("Turn On: --:--");
     _turn_on_time_label.set_xalign(0);
-    _turn_on_time_label.add_css_class("tonight-movie");    
-    _turn_on_time_label.set_margin_top(10);
+    _turn_on_time_label.add_css_class("tonight-movie");
 
-    _scroll_vbox.append(_turn_on_time_label);
+    _current_time_label.set_text("Current: --:--");
+    _current_time_label.set_xalign(0);
+    _current_time_label.add_css_class("tonight-movie");
 
+
+
+    time_row.append(_current_time_label);
+    time_row.append(_turn_on_time_label);
+
+
+    _scroll_vbox.append(time_row);
 
     //// layout
 
@@ -381,13 +392,29 @@ ControlPanelWindow::ControlPanelWindow()
 
                 std::ostringstream ss;
 
-                ss << "Turn On Time:  "
+                ss << "Turn On:  "
                    << on_h << ":"
                    << std::setw(2)
                    << std::setfill('0')
                    << on_m;
 
                 _turn_on_time_label.set_text(ss.str());
+            }
+
+            if (g_current_time_changed.exchange(false))
+            {
+                int cur_h = current_hours.load();
+                int cur_m = current_mins.load();
+
+                std::ostringstream ss;
+
+                ss << "Current:  "
+                   << cur_h << ":"
+                   << std::setw(2)
+                   << std::setfill('0')
+                   << cur_m;
+
+                _current_time_label.set_text(ss.str());
             }
 
             return true;

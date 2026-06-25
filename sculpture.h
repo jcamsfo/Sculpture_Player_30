@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <vector>
+#include "scheduler.h"
 
 class Sculpture
 {
@@ -27,6 +28,8 @@ public:
   Sculpture();
   // Sculpture(const std::string &filename, const std::string &tag);
   Sculpture(const std::string &filename, const std::string &tag, const std::string &filename2, const std::string &tag2);
+
+  Scheduler Schedule;
 
   uint16_t *Sculpture_Data_Mapped_Params = nullptr;
 

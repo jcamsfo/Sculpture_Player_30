@@ -29,6 +29,8 @@ private:
 
     Gtk::Label _turn_on_time_label;
 
+    Gtk::Label _current_time_label;
+
     //// Signal Callbacks (and helpers)
 
     bool

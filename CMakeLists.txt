@@ -29,6 +29,7 @@ add_executable(Sculpture_Player_30
   sculpture.cpp
   ftdi_local.cpp
   sdl2_local.cpp
+  scheduler.cpp
 )
 
 set_target_properties(Sculpture_Player_30 PROPERTIES
