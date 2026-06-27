@@ -36,11 +36,13 @@ int video_processor_main(void)
 
     static Prog_Durations Timing_All;
 
-    FT_HANDLE ftHandle;
-    if (!Init_FTDI(ftHandle))
-    {
-        exit(0);
-    }
+    // PUT IN FTDI_local
+    // FIXED OLD FTDI LOCKUP
+    // FT_HANDLE ftHandle;
+    // if (!Init_FTDI(ftHandle))
+    // {
+    //     exit(0);
+    // }
 
     char *RxBuffer = nullptr;
     RxBuffer = new char[8192]; // dummy buffer for receiving sync from hardware
@@ -90,7 +92,17 @@ int video_processor_main(void)
     {
 
         // wait for the FTDI input from the hardware to start the loop
-        bool FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
+
+        // bool FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
+
+        // FIXED OLD FTDI LOCKUP
+        bool FT_Read_GTEQ_64 = false;
+        if (g_ftdi_connected && ftHandle)
+            FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
+        else
+            Delay_Msec(10);
+        // FIXED OLD FTDI LOCKUP
+
         if (FT_Read_GTEQ_64) // normally 60fps
         {
             short_frame_delta = GetDeltaTime(short_frame_start);
@@ -107,7 +119,10 @@ int video_processor_main(void)
 
             if (Valid_Advance)
             {
-                FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
+
+                if (g_ftdi_connected) // FIXED OLD FTDI LOCKUP
+                    FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
+                //    FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
             }
 
             Start_Main = !Start_Main; // normally 30fps
@@ -197,7 +212,11 @@ int video_processor_main(void)
     for (int i = 0; i < 5; i++)
     {
         SC.Advance(Main_Display);
-        FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
+
+        if (g_ftdi_connected) // FIXED OLD FTDI LOCKUP
+            FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
+        // FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
+
         Delay_Msec(17);
     }
 
@@ -211,8 +230,26 @@ int video_processor_main(void)
     return 0;
 }
 
+// int main(int argc, char *argv[])
+// {
+
+//     std::thread video_thread(video_processor_main);
+
+//     auto app = Gtk::Application::create("gtkmm4.control_panel");
+
+//     int result = app->make_window_and_run<ControlPanelWindow>(argc, argv);
+
+//     g_running = false;
+
+//     if (video_thread.joinable())
+//         video_thread.join();
+
+//     return result;
+// }
+
 int main(int argc, char *argv[])
 {
+    std::thread ftdi_thread(FTDI_Thread);
     std::thread video_thread(video_processor_main);
 
     auto app = Gtk::Application::create("gtkmm4.control_panel");
@@ -223,6 +260,15 @@ int main(int argc, char *argv[])
 
     if (video_thread.joinable())
         video_thread.join();
+        
+    if (ftdi_thread.joinable())
+        ftdi_thread.join();
+
+    if (ftHandle)
+    {
+        FT_Close(ftHandle);
+        ftHandle = nullptr;
+    }
 
     return result;
 }

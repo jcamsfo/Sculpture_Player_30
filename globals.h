@@ -1,8 +1,8 @@
-
-#pragma once  // globals.h
+#pragma once
 
 #include <mutex>
 #include <atomic>
+#include <string>
 
 
 extern long long Prog_Frame_Counter;

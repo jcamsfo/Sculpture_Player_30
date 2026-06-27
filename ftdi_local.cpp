@@ -15,6 +15,11 @@
 using Clock = std::chrono::steady_clock;
 
 
+ // FIXED OLD FTDI LOCKUP
+FT_HANDLE ftHandle = nullptr;
+std::atomic<bool> g_ftdi_connected{false};
+
+
 
 bool Init_FTDI(FT_HANDLE &ftHandle)
 {
@@ -68,25 +73,40 @@ bool Check_FT_For_Read(FT_HANDLE ftHandle)
 {
     static char RxBuffer[8192];
 
-    FT_STATUS ftStatus = FT_OK;
-
     DWORD RxBytes = 0;
     DWORD TxBytes = 0;
     DWORD BytesReceived = 0;
     DWORD EventDWord = 0;
 
-    ftStatus = FT_GetStatus(ftHandle, &RxBytes, &TxBytes, &EventDWord);
+    FT_STATUS ftStatus =
+        FT_GetStatus(ftHandle, &RxBytes, &TxBytes, &EventDWord);
 
-    if ((ftStatus == FT_OK) && (RxBytes >= 64))
+    if (ftStatus != FT_OK)
+    {
+        std::cout << "FTDI status failed - disconnected\n";
+        g_ftdi_connected = false;
+        ::ftHandle = nullptr;
+        return false;
+    }
+
+    if (RxBytes >= 64)
     {
         DWORD bytes_to_read = std::min<DWORD>(RxBytes, 8192);
-        ftStatus = FT_Read(ftHandle, RxBuffer, RxBytes, &BytesReceived);
+
+        ftStatus = FT_Read(ftHandle, RxBuffer, bytes_to_read, &BytesReceived);
+
+        if (ftStatus != FT_OK)
+        {
+            std::cout << "FTDI read failed - disconnected\n";
+            g_ftdi_connected = false;
+            ::ftHandle = nullptr;
+            return false;
+        }
 
         if (RxBytes != 64)
             std::cout << "long RxBytes!!!!!!!!!!!!!!! " << RxBytes << std::endl;
 
-        if (ftStatus == FT_OK)
-            return true;
+        return true;
     }
 
     return false;
@@ -111,3 +131,33 @@ bool FTDI_Write_Buffer(
 
     return true;
 }
+
+
+ // FIXED OLD FTDI LOCKUP
+void FTDI_Thread()
+{
+    while (g_running)
+    {
+        if (!g_ftdi_connected)
+        {
+            FT_HANDLE newHandle = nullptr;
+
+            if (Init_FTDI(newHandle))
+            {
+                ftHandle = newHandle;
+                g_ftdi_connected = true;
+                std::cout << "FTDI connected\n";
+            }
+            else
+            {
+                Delay_Msec(1000);
+            }
+        }
+        else
+        {
+            Delay_Msec(500);
+        }
+    }
+}
+
+
