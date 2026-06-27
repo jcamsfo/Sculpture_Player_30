@@ -11,15 +11,12 @@
 #include <cstdio>
 #include <iostream>
 
-
 using Clock = std::chrono::steady_clock;
 
-
- // FIXED OLD FTDI LOCKUP
+// FIXED OLD FTDI LOCKUP
 FT_HANDLE ftHandle = nullptr;
 std::atomic<bool> g_ftdi_connected{false};
-
-
+std::atomic<bool> g_ftdi_sync_ready{false};
 
 bool Init_FTDI(FT_HANDLE &ftHandle)
 {
@@ -132,8 +129,7 @@ bool FTDI_Write_Buffer(
     return true;
 }
 
-
- // FIXED OLD FTDI LOCKUP
+// FIXED OLD FTDI LOCKUP
 void FTDI_Thread()
 {
     while (g_running)
@@ -155,9 +151,10 @@ void FTDI_Thread()
         }
         else
         {
-            Delay_Msec(500);
+            if (Check_FT_For_Read(ftHandle))
+                g_ftdi_sync_ready = true;
+
+            Delay_Msec(1);
         }
     }
 }
-
-

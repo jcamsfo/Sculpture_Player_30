@@ -96,12 +96,20 @@ int video_processor_main(void)
         // bool FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
 
         // FIXED OLD FTDI LOCKUP
-        bool FT_Read_GTEQ_64 = false;
-        if (g_ftdi_connected && ftHandle)
-            FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
-        else
-            Delay_Msec(10);
+        // bool FT_Read_GTEQ_64 = false;
+        // if (g_ftdi_connected && ftHandle)
+        //     FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
+        // else
+        //     Delay_Msec(10);
         // FIXED OLD FTDI LOCKUP
+
+        bool FT_Read_GTEQ_64 = g_ftdi_sync_ready.exchange(false);
+
+        if (!FT_Read_GTEQ_64)
+        {
+            Delay_Usec(100);
+            continue;
+        }
 
         if (FT_Read_GTEQ_64) // normally 60fps
         {
@@ -260,7 +268,7 @@ int main(int argc, char *argv[])
 
     if (video_thread.joinable())
         video_thread.join();
-        
+
     if (ftdi_thread.joinable())
         ftdi_thread.join();
 

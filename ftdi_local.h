@@ -9,6 +9,8 @@
  // FIXED OLD FTDI LOCKUP
 extern FT_HANDLE ftHandle;
 extern std::atomic<bool> g_ftdi_connected;
+extern std::atomic<bool> g_ftdi_sync_ready;
+
 void FTDI_Thread();
  // FIXED OLD FTDI LOCKUP
 
