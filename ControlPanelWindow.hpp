@@ -19,9 +19,13 @@ private:
     Gtk::Box _scroll_vbox;
     // TBD need to be class members or made with make_managed to work with
     //   signal callbacks (maybe move all other ctor-declared widgets into class?)
-    Gtk::Button _print_button;
-    Gtk::Button _copy_button;
+    Gtk::Button _save_image_button;
+    Gtk::Button _save_tonight_button;
     Gtk::Button _reset_button;
+
+    Gtk::Button _pause_button;
+    Gtk::Button _ff_button;
+    Gtk::Button _rewind_button;
 
     Gtk::Label _current_file_label;
 
@@ -30,6 +34,9 @@ private:
     Gtk::Label _turn_on_time_label;
 
     Gtk::Label _current_time_label;
+
+    Gtk::Label _video_position_label;
+
 
     //// Signal Callbacks (and helpers)
 
@@ -66,14 +73,11 @@ private:
     std::string
     _sliderParamsToMockJSON();
 
-
     void
     _onSaveImageControlsClicked();
 
     void
     _onSaveVideoForTonightClicked();
-
-
 
     bool
     _onCopyButtonTimeout();
@@ -83,6 +87,10 @@ private:
 
     void
     _onResetButtonClicked();
+
+    void _onPauseClicked();
+    void _onFastForwardClicked();
+    void _onRewindClicked();
 
     //// Sliders Parameters
 
@@ -106,6 +114,11 @@ private:
     };
 
     void _updateSlidersFromGuiParams();
+
+    
+    std::string _current_movie_name = "No file loaded";
+
+    void Update_Current_File_Label();
 
     struct _UIParamKeys
     {

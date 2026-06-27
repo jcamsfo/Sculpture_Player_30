@@ -65,6 +65,20 @@ struct GuiParamsAtomic
 
 inline GuiParamsAtomic g_gui_params;
 
+
+
+// I'd like to add 8 more sliders  below the time texts  :  
+// LED_Gain 0-100  
+// LED_Black -25-25  
+// LED_Color 0-120  
+// LED Gamma 0-100  
+// LED_Shift 0-360  
+// LED_Red 0-120 
+// LED_Green 0-120  
+// LED_Blue 0-120  
+// hese will also work with globals  
+
+
 inline std::mutex g_drop_path_mutex;
 inline std::string g_drop_path;
 inline std::atomic<bool> g_new_drop_path{false};
@@ -75,6 +89,12 @@ inline std::atomic<bool> g_gui_sliders_need_update{false};
 inline std::atomic<bool> g_gui_save_image_params{false};
 
 inline std::atomic<bool> g_gui_save_video_for_tonight{false};
+
+
+inline std::atomic<bool> g_gui_pause{false};
+inline std::atomic<bool> g_gui_fast_forward{false};
+inline std::atomic<bool> g_gui_rewind{false};
+
 
 
 inline std::mutex g_current_movie_name_mutex;
@@ -95,6 +115,13 @@ inline std::atomic<int> current_hours{0};
 inline std::atomic<int> current_mins{0};
 inline std::atomic<bool> g_current_time_changed{false};
 
+
+
+inline std::atomic<int> video_length_mins{0};
+inline std::atomic<int> video_length_secs{0};
+inline std::atomic<int> current_position_mins{0};
+inline std::atomic<int> current_position_secs{0};
+inline std::atomic<bool> current_position_changed{false};
 
 
 

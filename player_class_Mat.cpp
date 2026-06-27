@@ -6,7 +6,6 @@
 #include "player_class_Mat.h"
 #include "image_processor.h"
 
-
 using namespace std;
 // using namespace cv;
 
@@ -23,13 +22,18 @@ Video_Player_With_Processing::Video_Player_With_Processing(void)
   // ImageInNew_U.create(IMAGE_ROWS, IMAGE_COLS, CV_8UC(3));
   // ImageInOld_U.create(IMAGE_ROWS, IMAGE_COLS, CV_8UC(3));
 
-  Temp_Read_Movie.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
+  // Temp_Read_Movie.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
 
   // Ones_FU.create(IMAGE_ROWS, IMAGE_COLS, CV_32FC(3));
   // Ones_FU = cv::Scalar(255.0, 255.0, 255.0);
 
+  ImageIn_M.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC3);
+  ImageIn_M_Shifted.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC3);
   ImageInNew_M.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
   ImageInOld_M.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
+
+  ImageMain_FM.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
+  VideoDisplay.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
 
   Ones_FM.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_32FC(3));
   Ones_FM = cv::Scalar(255.0, 255.0, 255.0);
@@ -40,6 +44,9 @@ Video_Player_With_Processing::Video_Player_With_Processing(void)
 // fix last file thing etc  Last_Good_Filename
 std::string Video_Player_With_Processing::Open_Image_File_Mat(const string &Image_File_Name_In, const string &Name_In) // no parameters (load parameters after)
 {
+
+  
+  Close_Image_File();
 
   Player_Params = Player_Params_Defaults;
 
@@ -120,9 +127,9 @@ std::string Video_Player_With_Processing::Open_Image_File_Mat(const string &Imag
       cout << "File is the wrong Image Size: Auto Scaled" << endl
            << endl;
       capMain.read(ImageInUnscaled_M); // increments current frame
-      resize(ImageInUnscaled_M, ImageInOld_M, ImageInOld_M.size(), 0, 0, 1);
+      resize(ImageInUnscaled_M, ImageInOld_M, cv::Size(SCREEN_IMAGE_COLS, SCREEN_IMAGE_ROWS), 0, 0, cv::INTER_LINEAR);
       capMain.read(ImageInUnscaled_M); // increments current frame
-      resize(ImageInUnscaled_M, ImageInNew_M, ImageInNew_M.size(), 0, 0, 1);
+      resize(ImageInUnscaled_M, ImageInNew_M, cv::Size(SCREEN_IMAGE_COLS, SCREEN_IMAGE_ROWS), 0, 0, cv::INTER_LINEAR);
       return Image_File_Name_In;
     }
 
@@ -138,9 +145,19 @@ std::string Video_Player_With_Processing::Open_Image_File_Mat(const string &Imag
   }
 }
 
-void Video_Player_With_Processing::Close_Image_File(void)
+// void Video_Player_With_Processing::Close_Image_File(void)
+// {
+//   capMain.release();
+// }
+
+void Video_Player_With_Processing::Close_Image_File()
 {
   capMain.release();
+
+  ImageInUnscaled_M.release();
+
+  Current_Frame = 0;
+  Duration_Frames = 0;
 }
 
 // void Video_Player_With_Processing::Change_Param(const int &Param_Index, const int Value)
@@ -161,23 +178,25 @@ void Video_Player_With_Processing::Close_Image_File(void)
 inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &ImageOut,
                                                                    const int &Frame_Interp_Type)
 {
+
   if (!player_pause)
   {
     while (Location_Accum >= 100)
     {
       const int jump_value = 100;
-      double current_frame = capMain.get(cv::CAP_PROP_POS_FRAMES);
 
-      if ((Player_Params[FAST_FORWARD] == 1) && (current_frame + jump_value < capLength))
+      Current_Frame = capMain.get(cv::CAP_PROP_POS_FRAMES);
+
+      if ((Player_Params[FAST_FORWARD] == 1) && (Current_Frame + jump_value < capLength))
       {
-        capMain.set(cv::CAP_PROP_POS_FRAMES, current_frame + jump_value);
+        capMain.set(cv::CAP_PROP_POS_FRAMES, Current_Frame + jump_value);
         Player_Params[FAST_FORWARD] = 0;
       }
 
       if (Player_Params[REWIND] == 1)
       {
-        if (current_frame > jump_value)
-          capMain.set(cv::CAP_PROP_POS_FRAMES, current_frame - jump_value);
+        if (Current_Frame > jump_value)
+          capMain.set(cv::CAP_PROP_POS_FRAMES, Current_Frame - jump_value);
         else
           capMain.set(cv::CAP_PROP_POS_FRAMES, 0);
         Player_Params[REWIND] = 0;
@@ -194,7 +213,7 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
       }
 
       if (Scale_Video)
-        resize(ImageInUnscaled_M, ImageInNew_M, ImageInNew_M.size(), 0, 0, 1);
+        resize(ImageInUnscaled_M, ImageInNew_M, cv::Size(SCREEN_IMAGE_COLS, SCREEN_IMAGE_ROWS), 0, 0, cv::INTER_LINEAR);
       else
         ImageInNew_M = ImageInUnscaled_M;
 
@@ -227,11 +246,8 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
     Location_Accum += Player_Params[SPEED];
   }
 
-  // If paused, Current_Frame stays where it was last advanced (good)
+  Current_Frame = capMain.get(cv::CAP_PROP_POS_FRAMES);
 }
-
-
-
 
 void Video_Player_With_Processing::copy_params_from_gui_player()
 {
@@ -297,24 +313,26 @@ void Video_Player_With_Processing::Process_New_Frame_Ext_Process(void)
   copy_params_from_gui_player();
 
   // if (Prog_Frame_Counter % 60 == 0)
-  //   std::cout << endl << "Filter " << Player_Params[FILTER_TYPE] 
+  //   std::cout << endl << "Filter " << Player_Params[FILTER_TYPE]
   //             << "   HShift " << Player_Params[H_SHIFT]
   //             << "   Rotate " << Player_Params[ROTATE]
   //             << std::endl << endl ;
-
 
   if (Player_Params[PAUSE_TOGGLE] == 0)
     Grab_Frame_From_File_Mat(ImageIn_M, 1);
 
   auto player_grab = GetDeltaTime(player_total);
 
-  H_Shift_Rotate(ImageIn_M, ImageIn_M, Player_Params[H_SHIFT], false, Player_Params[ROTATE]); // Player_Params[H_ROTATE]);
+  // H_Shift_Rotate(ImageIn_M, ImageIn_M, Player_Params[H_SHIFT], false, Player_Params[ROTATE]);
+
+  H_Shift_Rotate(ImageIn_M, ImageIn_M_Shifted, Player_Params[H_SHIFT], false, Player_Params[ROTATE]);
 
   auto player_rotate = GetDeltaTime(player_total) - player_grab;
 
   // class general version    8 bits in float out
   // call to image_processor class
-  ImageMain_FM = Player_Proc.Process_Image(ImageIn_M, Player_Params); // 3.1 - 4 ms
+  // ImageMain_FM = Player_Proc.Process_Image(ImageIn_M, Player_Params); // 3.1 - 4 ms
+  ImageMain_FM = Player_Proc.Process_Image(ImageIn_M_Shifted, Player_Params);
 
   auto player_process = GetDeltaTime(player_total) - player_grab - player_rotate;
 

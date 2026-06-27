@@ -30,7 +30,11 @@ Sculpture::Sculpture(const std::string &filename, const std::string &tag, const 
     Program_Start_Up = true;
     VP[CURRENT].Open_Image_File_Mat(filename, "Current");
     VP[ON_DECK].Open_Image_File_Mat(filename2, "On_Deck");
-    // image_mixed_ will be sized lazily in Cross_Fade based on A/B
+
+    Cross_Faded_F.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_32FC3);
+    Main_Display_M.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC3);
+    Down_Stream_Corrected_F.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_32FC3);
+    Downstream_Display_M.create(SCREEN_IMAGE_ROWS / 2, SCREEN_IMAGE_COLS / 2, CV_8UC3);
 
     Read_2D_Number(Sample_Points_Map, "Day_For_Night_Sample_Map.csv");
 
@@ -83,9 +87,7 @@ Sculpture::Sculpture(const std::string &filename, const std::string &tag, const 
 
 bool Sculpture::Force_Load_Movie_Now(const std::string &path)
 {
-    VP[CURRENT].Close_Image_File();
     VP[CURRENT].Open_Image_File_Mat(path, "main image");
-    VP[ON_DECK].Close_Image_File();
     VP[ON_DECK].Open_Image_File_Mat(path, "main image");
 
     return true;
@@ -147,7 +149,6 @@ bool Sculpture::Load_New_Movie(string path)
 {
     string temp_found_file;
 
-    VP[ON_DECK].Close_Image_File();
     VP[ON_DECK].Open_Image_File_Mat(path, "main image");
 
     Path_Parsed temp_path = Parse_Filename_Path(path);
@@ -357,6 +358,14 @@ bool Sculpture::Load_LED_Corrections(const std::string &filename)
     return true;
 }
 
+// void Sculpture::Release_Working_Mats()
+// {
+//     Cross_Faded_F.release();
+//     Main_Display_M.release();
+//     Down_Stream_Corrected_F.release();
+//     Downstream_Display_M.release();
+// }
+
 bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 {
     bool start_fade = false;
@@ -392,13 +401,21 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         g_start_up_time_changed.store(true);
     }
 
-    if (Program_Frame_Count%60 == 0) // every 2 seconds
+    if (Program_Frame_Count % 30 == 0) // every 2 seconds
     {
         current_hours.store(Schedule.Current_Time_Struct.current_hour_with_dst_12);
         current_mins.store(Schedule.Current_Time_Struct.current_minutes);
+
+        int total_seconds = VP[CURRENT].Current_Frame / 30;
+        current_position_mins.store(total_seconds / 60);
+        current_position_secs.store(total_seconds % 60);
+
+        total_seconds = VP[CURRENT].Duration_Frames / 30;
+        video_length_mins.store(total_seconds / 60);
+        video_length_secs.store(total_seconds % 60);
+
         g_current_time_changed.store(true);
     }
-
 
     // Load tonights video or black depending on current time
     if (Program_Start_Up)
@@ -425,6 +442,7 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     /************************************* SCHEDULING RELATED  DONE ****************************************/
 
     /************************************* GUI BUTTONS    **************************************************/
+
     // save params for the current image from the gui
     if (g_gui_save_image_params.exchange(false))
     {
@@ -436,13 +454,30 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         }
     }
 
-    // save the current image to be played tonight
+    // save the name of the current image to be played tonight
     if (g_gui_save_video_for_tonight.exchange(false))
     {
         Save_Video_For_Tonight();
         std::cout << "Saved tonight's selection"
                   << Current_Movie_Info_File << std::endl;
     }
+
+    if (g_gui_pause.exchange(false))
+    {
+        VP[CURRENT].Player_Params[PAUSE_TOGGLE] =
+            !VP[CURRENT].Player_Params[PAUSE_TOGGLE];
+    }
+
+    if (g_gui_fast_forward.exchange(false))
+    {
+        VP[CURRENT].Player_Params[FAST_FORWARD] = true;
+    }
+
+    if (g_gui_rewind.exchange(false))
+    {
+        VP[CURRENT].Player_Params[REWIND] = 1;
+    }
+
     /************************************* GUI BUTTONS DONE  ***********************************************/
 
     process_start_ = Clock::now();
@@ -450,22 +485,33 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     // start the fading process
     if (start_fade) // SWAP so that it's always fading in the same direction  less confusing
     {
-        VP[SWAP] = VP[CURRENT];
-        VP[CURRENT] = VP[ON_DECK];
-        VP[ON_DECK] = VP[SWAP];
+        // VP[SWAP] = VP[CURRENT];
+        // VP[CURRENT] = VP[ON_DECK];
+        // VP[ON_DECK] = VP[SWAP];
+
+        std::swap(VP[CURRENT], VP[ON_DECK]);
         process_swap_delta_stored = GetDeltaTime(process_start_);
     }
 
+    // LEAK TESTING
     /******************************  IMAGE PROCESS BOTH IMAGES **************************/
     // VP[CURRENT].Process_New_Frame_Ext_Process();
     // VP[ON_DECK].Process_New_Frame_Ext_Process();
     // thread the 2 players
-    std::jthread t1([&]
-                    { VP[CURRENT].Process_New_Frame_Ext_Process(); });
-    std::jthread t2([&]
-                    { VP[ON_DECK].Process_New_Frame_Ext_Process(); });
-    t1.join();
-    t2.join(); // ⬅️ ensure both finished
+    // std::jthread t1([&]
+    //                 { VP[CURRENT].Process_New_Frame_Ext_Process(); });
+    // std::jthread t2([&]
+    //                 { VP[ON_DECK].Process_New_Frame_Ext_Process(); });
+    // t1.join();
+    // t2.join(); // ⬅️ ensure both finished
+
+    VP[CURRENT].Process_New_Frame_Ext_Process();
+
+    if (!fade_done_ || start_fade)
+    {
+        VP[ON_DECK].Process_New_Frame_Ext_Process();
+    }
+
     /******************************  IMAGE PROCESS BOTH IMAGES DONE *********************/
 
     auto process_image_processing_both = GetDeltaTime(process_start_);

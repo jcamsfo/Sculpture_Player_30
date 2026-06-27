@@ -84,9 +84,12 @@ void gauss_blur_inplace(cv::Mat &ImageInOut_F, int k)
   cv::GaussianBlur(ImageInOut_F, ImageInOut_F, cv::Size(ks, ks), 0);
 }
 
+
+  // LEAK TESTING  
 // -------- Fused non-spatial (with inv255 + clamp) --------
 void process_pixels(cv::Mat &ImageIn_F, const std::vector<int> &local_params)
 {
+
   CV_Assert(ImageIn_F.type() == CV_32FC3);
 
   const bool invert = local_params[GAIN] < 0;
@@ -154,10 +157,22 @@ void process_image_with_shift_float(const cv::Mat &src,
   else
     src.copyTo(dst);
 
+  // LEAK TESTING
   process_pixels(dst, p);
 
+   // LEAK TESTING 
   if (p[FILTER_TYPE])
     gauss_blur_inplace(dst, p[FILTER_TYPE]);
+
+if(Prog_Frame_Counter%30 == 0)
+std::cout
+    << "GAIN " << p[GAIN]
+    << " BLACK " << p[BLACK_LEVEL]
+    << " COLOR_GAIN " << p[COLOR_GAIN]
+    << " HUE " << p[COLOR_HUE]
+    << " GAMMA " << p[IMAGE_GAMMA]
+    << std::endl;
+
 }
 
 
@@ -182,10 +197,14 @@ cv::Mat &Image_Processor::Process_Image(const cv::Mat &ImageIn_U,
 
   auto process_start = Clock::now();
   // pixel math (in-place on 32F)
+
+    // LEAK TESTING
   process_pixels(Image_Processed_F, local_params);
+
   auto process_delta = GetDeltaTime(process_start);
 
   // optional blur on 32F
+      // LEAK TESTING
   if (local_params[FILTER_TYPE])
     gauss_blur_inplace(Image_Processed_F, local_params[FILTER_TYPE]);
 

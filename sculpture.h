@@ -85,9 +85,9 @@ public:
   void Fade_To_A(const cv::Mat &A, const cv::Mat &B, cv::Mat &dst, float fade_length_sec, bool &fade_done, bool &start_fade);
 
   // CV_32FC3, source // CV_32FC3, SCULPTURE_IMAGE_ROWS x SCULPTURE_IMAGE_COLS
-  void Save_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
+  // void Save_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
 
-  void Save_Staggered_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
+  // void Save_Staggered_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);
 
   void Sample_To_Buffer_RGBW_16_Faster(const cv::Mat &ImageIn_F, uint16_t *Sampled_Buffer_RGB);
 
@@ -136,26 +136,19 @@ public:
 
   std::vector<int> Mixer_Params;
 
-  Mat Cross_Faded_F;
-  Mat Main_Display_M;
-  Mat Down_Stream_Corrected_F;
-  Mat Downstream_Display_M;
-
-  Mat Cross_Faded_F_Sampled;
-  Mat Cross_Faded_M_Sampled;
-  Mat Sampled_Pre_Mapped_Test_2;
-
-  Mat Sampled_Pre_Mapped;
-
-  Mat Sampled_Pre_Mapped_Test;
-
   int loop_counter;
 
   std::string Current_Movie_Info_File;
 
 private:
-  cv::Mat image_mixed_; // internal reusable buffer
-  cv::Mat image_mixed_F;
+
+  Mat Cross_Faded_F;
+  Mat Main_Display_M;
+  Mat Down_Stream_Corrected_F;
+  Mat Downstream_Display_M;
+
+  void Release_Working_Mats();
+
   float fade_level_ = 1.0f; // 0 = fully B, 1 = fully A
 
   vector<vector<int>> Sample_Points_Map;

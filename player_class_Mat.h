@@ -32,15 +32,14 @@ private:
   Mat ImageIn_M;
   Mat ImageInNew_M;
   Mat ImageInOld_M;
-  Mat ImageShifted_M;
-  Mat Image_M;
+  Mat ImageIn_M_Shifted;
 
-  Mat Temp_Read_Movie;
+  // Mat Temp_Read_Movie;
 
   Mat Ones_FM;
 
   // For Gamma Correction
-  UMat Image_squared;
+  // UMat Image_squared;
 
   bool Check_File_Type;
 
@@ -85,19 +84,16 @@ public:
   // move back to private
   VideoCapture capMain;
 
+
   Video_Player_With_Processing(void);
 
   std::string Open_Image_File_Mat(const string &Image_File_Name_In, const string &Name_In);
 
   void Close_Image_File(void);
 
-  std::string Check_Image_File(const string &Image_File_Name_In, const string &Name_In);
-
   // void Change_Param(const int &Param_Index, const std::string Value);
   // void Change_Param(const int &Param_Index, const int Value);
   // void Change_All_Params(std::vector<int> Value);
-
-  static int wrap_mod_U(int s, int W);
 
   void H_Shift_Rotate(const cv::Mat &ImageIn_U,
                       cv::Mat &ImageOut_U,
@@ -120,10 +116,11 @@ public:
 
   string Default_Movie_With_Path;
 
-  Mat VideoDisplay;
 
+  Mat VideoDisplay;
   Mat ImageMain_FM;
 
+  
   bool player_pause;
 
   int Frame_Interp_Type;
@@ -132,6 +129,7 @@ public:
   int Current_Frame;
   int Location_Diff;
   int Duration_Frames;
+
 
   bool display_on;
 
