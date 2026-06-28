@@ -10,6 +10,10 @@
 #include <algorithm> // for std::clamp
 #include <cstdio>
 #include <iostream>
+#include <cstring>
+#include "config.h"
+
+
 
 using Clock = std::chrono::steady_clock;
 
@@ -17,6 +21,10 @@ using Clock = std::chrono::steady_clock;
 FT_HANDLE ftHandle = nullptr;
 std::atomic<bool> g_ftdi_connected{false};
 std::atomic<bool> g_ftdi_sync_ready{false};
+
+std::mutex g_ftdi_write_mutex;
+std::vector<uint16_t> g_ftdi_write_buffer;
+std::atomic<bool> g_ftdi_write_ready{false};
 
 bool Init_FTDI(FT_HANDLE &ftHandle)
 {
@@ -38,7 +46,7 @@ bool Init_FTDI(FT_HANDLE &ftHandle)
     Mode = 0x00; // reset
     ftStatus = FT_SetBitMode(ftHandle, Mask, Mode);
 
-    Delay_Msec(1000);
+    Delay_Msec(300);
 
     Mode = 0x40; // Sync FIFO
     ftStatus = FT_SetBitMode(ftHandle, Mask, Mode);
@@ -130,8 +138,11 @@ bool FTDI_Write_Buffer(
 }
 
 // FIXED OLD FTDI LOCKUP
+// FIXED OLD FTDI LOCKUP
 void FTDI_Thread()
 {
+    g_ftdi_write_buffer.resize(SCULPTURE_SEND_SIZE_RGBW_BYTES / sizeof(uint16_t));
+
     while (g_running)
     {
         if (!g_ftdi_connected)
@@ -142,7 +153,6 @@ void FTDI_Thread()
             {
                 ftHandle = newHandle;
                 g_ftdi_connected = true;
-                std::cout << "FTDI connected\n";
             }
             else
             {
@@ -151,10 +161,48 @@ void FTDI_Thread()
         }
         else
         {
+            // Read sync from hardware
             if (Check_FT_For_Read(ftHandle))
                 g_ftdi_sync_ready = true;
+
+            // Write latest sculpture buffer
+            if (g_ftdi_write_ready)
+            {
+                std::lock_guard<std::mutex> lock(g_ftdi_write_mutex);
+
+                if (!g_ftdi_write_buffer.empty())
+                {
+                    bool ok = FTDI_Write_Buffer(
+                        ftHandle,
+                        g_ftdi_write_buffer.data(),
+                        g_ftdi_write_buffer.size() * sizeof(uint16_t));
+
+                    if (!ok)
+                    {
+                        FT_Close(ftHandle);
+                        ftHandle = nullptr;
+
+                        g_ftdi_connected = false;
+                        g_ftdi_sync_ready = false;
+                    }
+                }
+
+                g_ftdi_write_ready = false;
+            }
 
             Delay_Msec(1);
         }
     }
+}
+
+void Queue_FTDI_Write(const uint16_t *buffer, DWORD buffer_size_bytes)
+{
+    std::lock_guard<std::mutex> lock(g_ftdi_write_mutex);
+
+    int count = buffer_size_bytes / sizeof(uint16_t);
+
+    // g_ftdi_write_buffer.assign(buffer, buffer + count);
+    memcpy(g_ftdi_write_buffer.data(), buffer, buffer_size_bytes);
+
+    g_ftdi_write_ready = true;
 }

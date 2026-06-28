@@ -93,23 +93,29 @@ int video_processor_main(void)
 
         // wait for the FTDI input from the hardware to start the loop
 
-        // bool FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
-
-        // FIXED OLD FTDI LOCKUP
-        // bool FT_Read_GTEQ_64 = false;
-        // if (g_ftdi_connected && ftHandle)
-        //     FT_Read_GTEQ_64 = Check_FT_For_Read(ftHandle);
-        // else
-        //     Delay_Msec(10);
-        // FIXED OLD FTDI LOCKUP
-
         bool FT_Read_GTEQ_64 = g_ftdi_sync_ready.exchange(false);
+
+        static int missed_sync_count = 0;
 
         if (!FT_Read_GTEQ_64)
         {
-            Delay_Usec(100);
-            continue;
+            missed_sync_count++;
+            // wait up to ~10 ms for real FTDI sync before fallback
+            if (g_ftdi_connected && missed_sync_count < 100)
+            {
+                Delay_Usec(100);
+                continue;
+            }
+            Delay_Msec(16); // fallback after enough missed syncs
+            FT_Read_GTEQ_64 = true;
+            cout << "CONNECT USB CABLE !!!!!!!!!!!!!!!!!!!!!!!" << endl;
         }
+        else
+        {
+            missed_sync_count = 0;
+        }
+
+
 
         if (FT_Read_GTEQ_64) // normally 60fps
         {
@@ -127,10 +133,9 @@ int video_processor_main(void)
 
             if (Valid_Advance)
             {
-
-                if (g_ftdi_connected) // FIXED OLD FTDI LOCKUP
-                    FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
-                //    FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
+                Queue_FTDI_Write(
+                    SC.Sculpture_Data_Mapped_Params,
+                    SCULPTURE_SEND_SIZE_RGBW_BYTES);
             }
 
             Start_Main = !Start_Main; // normally 30fps
@@ -238,26 +243,13 @@ int video_processor_main(void)
     return 0;
 }
 
-// int main(int argc, char *argv[])
-// {
-
-//     std::thread video_thread(video_processor_main);
-
-//     auto app = Gtk::Application::create("gtkmm4.control_panel");
-
-//     int result = app->make_window_and_run<ControlPanelWindow>(argc, argv);
-
-//     g_running = false;
-
-//     if (video_thread.joinable())
-//         video_thread.join();
-
-//     return result;
-// }
 
 int main(int argc, char *argv[])
 {
     std::thread ftdi_thread(FTDI_Thread);
+
+    Delay_Msec(300);   // give FTDI time to open before video starts
+
     std::thread video_thread(video_processor_main);
 
     auto app = Gtk::Application::create("gtkmm4.control_panel");

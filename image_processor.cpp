@@ -164,14 +164,14 @@ void process_image_with_shift_float(const cv::Mat &src,
   if (p[FILTER_TYPE])
     gauss_blur_inplace(dst, p[FILTER_TYPE]);
 
-if(Prog_Frame_Counter%30 == 0)
-std::cout
-    << "GAIN " << p[GAIN]
-    << " BLACK " << p[BLACK_LEVEL]
-    << " COLOR_GAIN " << p[COLOR_GAIN]
-    << " HUE " << p[COLOR_HUE]
-    << " GAMMA " << p[IMAGE_GAMMA]
-    << std::endl;
+// if(Prog_Frame_Counter%30 == 0)
+// std::cout
+//     << "GAIN " << p[GAIN]
+//     << " BLACK " << p[BLACK_LEVEL]
+//     << " COLOR_GAIN " << p[COLOR_GAIN]
+//     << " HUE " << p[COLOR_HUE]
+//     << " GAMMA " << p[IMAGE_GAMMA]
+//     << std::endl;
 
 }
 
