@@ -148,17 +148,17 @@ void process_pixels(cv::Mat &ImageIn_F, const ProcessParams &local_params)
 
 
 
-void process_pixels_dst(cv::Mat &ImageIn_F, const std::vector<int> &local_params)
+void process_pixels_dst(cv::Mat &ImageIn_F, const ProcessParams &local_params)
 {
 
   CV_Assert(ImageIn_F.type() == CV_32FC3);
 
-  const bool invert = local_params[GAIN] < 0;
-  const float gain_abs = std::abs(local_params[GAIN]) / 100.0f;
-  const float black_add = 2.0f * static_cast<float>(local_params[BLACK_LEVEL]);
-  const float t = static_cast<float>(local_params[IMAGE_GAMMA]) / 100.0f;
-  const float hue = static_cast<float>(local_params[COLOR_HUE]) * (float)CV_PI / 180.0f;
-  const float cg = static_cast<float>(local_params[COLOR_GAIN]) / 100.0f;
+  const bool invert = local_params.Gain < 0;
+  const float gain_abs = std::abs(local_params.Gain) / 100.0f;
+  const float black_add = 2.0f * static_cast<float>(local_params.Black_Level);
+  const float t = static_cast<float>(local_params.Image_Gamma) / 100.0f;
+  const float hue = static_cast<float>(local_params.Color_Hue) * (float)CV_PI / 180.0f;
+  const float cg = static_cast<float>(local_params.Color_Gain) / 100.0f;
   const float ccos = cg * std::cos(hue);
   const float ssin = cg * std::sin(hue);
   const float kGY_RY = -0.5093f;
@@ -208,14 +208,14 @@ void process_pixels_dst(cv::Mat &ImageIn_F, const std::vector<int> &local_params
 
 
 // for downstream LED Correction
-void process_image_with_shift_float(const cv::Mat &src,
+void process_downstream_image_with_shift(const cv::Mat &src,
                                     cv::Mat &dst,
-                                    const std::vector<int> &p)
+                                    const ProcessParams &p)
 {
   CV_Assert(src.type() == CV_32FC3);
 
-  if (p[H_SHIFT] != 0)
-    h_shift_float(src, dst, p[H_SHIFT]);
+  if (p.H_Shift != 0)
+    h_shift_float(src, dst, p.H_Shift);
   else
     src.copyTo(dst);
 
@@ -223,17 +223,8 @@ void process_image_with_shift_float(const cv::Mat &src,
   process_pixels_dst(dst, p);
 
    // LEAK TESTING 
-  if (p[FILTER_TYPE])
-    gauss_blur_inplace(dst, p[FILTER_TYPE]);
-
-// if(Prog_Frame_Counter%30 == 0)
-// std::cout
-//     << "GAIN " << p[GAIN]
-//     << " BLACK " << p[BLACK_LEVEL]
-//     << " COLOR_GAIN " << p[COLOR_GAIN]
-//     << " HUE " << p[COLOR_HUE]
-//     << " GAMMA " << p[IMAGE_GAMMA]
-//     << std::endl;
+  if (p.Filter_Type)
+    gauss_blur_inplace(dst, p.Filter_Type);
 
 }
 

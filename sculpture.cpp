@@ -39,7 +39,7 @@ Sculpture::Sculpture(const std::string &filename, const std::string &tag, const 
 
     Read_2D_Number(Sample_Points_Map, "Day_For_Night_Sample_Map.csv");
 
-    Mixer_Params = Mixer_Params_Defaults;
+    Mixer_Params = ProcessParams{};
 
     Load_LED_Corrections("swirl_files/LED_Corrections.txt");
 
@@ -328,31 +328,31 @@ bool Sculpture::Load_LED_Corrections(const std::string &filename)
             continue;
 
         if (key == "Gain")
-            Mixer_Params[GAIN] = value;
+            Mixer_Params.Gain = value;
 
         else if (key == "Black_Level")
-            Mixer_Params[BLACK_LEVEL] = value;
+            Mixer_Params.Black_Level= value;
 
         else if (key == "Image_Gamma")
-            Mixer_Params[IMAGE_GAMMA] = value;
+            Mixer_Params.Image_Gamma = value;
 
         else if (key == "Color_Gain")
-            Mixer_Params[COLOR_GAIN] = value;
+            Mixer_Params.Color_Gain = value;
 
         else if (key == "Color_Hue")
-            Mixer_Params[COLOR_HUE] = value;
+            Mixer_Params.Color_Hue = value;
 
         else if (key == "H_Shift")
-            Mixer_Params[H_SHIFT] = value;
+            Mixer_Params.H_Shift = value;
 
         else if (key == "Rotate")
-            Mixer_Params[ROTATE] = value;
+            Mixer_Params.Rotate = value;
 
         else if (key == "Speed")
-            Mixer_Params[SPEED] = value;
+            Mixer_Params.Speed = value;
 
         else if (key == "Filter")
-            Mixer_Params[FILTER_TYPE] = value;
+            Mixer_Params.Filter_Type = value;
     }
 
     return true;
@@ -530,7 +530,7 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     // // Downstream LED Correction and shift on full size image  Note output could be same as input
     // Mixer_Params[H_SHIFT] = 100;
-    process_image_with_shift_float(Cross_Faded_F, Down_Stream_Corrected_F, Mixer_Params); // Sculpture Res
+    process_downstream_image_with_shift(Cross_Faded_F, Down_Stream_Corrected_F, Mixer_Params); // Sculpture Res
 
     auto ds = GetDeltaTime(ds_start);
 

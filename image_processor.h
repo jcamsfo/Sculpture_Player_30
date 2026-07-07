@@ -11,11 +11,10 @@ void gauss_blur_inplace(cv::Mat &img_8u_or_32f3, int k);
 // Fused non-spatial math. Expects CV_32FC3 BGR in [0..255], in-place.
 void process_pixels(cv::Mat &bgr32f, const ProcessParams &local_params);
 
-void process_pixels_dst(cv::Mat &ImageIn_F, const std::vector<int> &local_params);
+void process_pixels_dst(cv::Mat &ImageIn_F, const ProcessParams &local_params);
 
-void process_image_with_shift_float(const cv::Mat& src,
-                                    cv::Mat& dst,
-                                    const std::vector<int>& p);
+
+void process_downstream_image_with_shift(const cv::Mat &ImageIn_U_or_F,  cv::Mat& dst, const ProcessParams &local_params);                                    
 
 void h_shift_u8(const cv::Mat& src, cv::Mat& dst, int shift_px);
 void h_shift_float(const cv::Mat &src, cv::Mat &dst, int shift_px);

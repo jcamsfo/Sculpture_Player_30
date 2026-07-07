@@ -135,7 +135,9 @@ public:
 
   Video_Player_With_Processing VP[3];
 
-  std::vector<int> Mixer_Params;
+  // std::vector<int> Mixer_Params;
+
+  ProcessParams Mixer_Params;
 
   int loop_counter;
 
@@ -154,26 +156,4 @@ private:
 
   vector<vector<int>> Sample_Points_Map;
 
-  inline static const vector<int> Mixer_Params_Defaults{
-      75,  // GAIN
-      0,   // BLACK_LEVEL
-      100, // COLOR_GAIN
-      0,   // COLOR_HUE
-      100, // IMAGE_GAMMA
-      0,   // H_SHIFT
-      0,   // SPEED
-      0,   // H_ROTATE
-      0,   // FILTER_TYPE
-
-      0, // PAUSE_TOGGLE
-      0, // FAST_FORWARD
-      0, // REWIND
-      0  // QUIT
-
-  };
-
-  // bool direc_ = true;
-  // bool fade_done_ = false;
-  // Clock::time_point process_start_ = Clock::now();
-  // float temp_fade_ = 0.0f;
 };

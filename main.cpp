@@ -36,13 +36,6 @@ int video_processor_main(void)
 
     static Prog_Durations Timing_All;
 
-    // PUT IN FTDI_local
-    // FIXED OLD FTDI LOCKUP
-    // FT_HANDLE ftHandle;
-    // if (!Init_FTDI(ftHandle))
-    // {
-    //     exit(0);
-    // }
 
     char *RxBuffer = nullptr;
     RxBuffer = new char[8192]; // dummy buffer for receiving sync from hardware
