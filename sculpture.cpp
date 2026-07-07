@@ -15,6 +15,7 @@
 #include <sstream>
 #include <vector>
 #include <iomanip>
+#include "process_params.h"
 
 using Clock = std::chrono::steady_clock;
 
@@ -93,8 +94,7 @@ bool Sculpture::Force_Load_Movie_Now(const std::string &path)
     return true;
 }
 
-bool Sculpture::Load_Params_From_Text_File(const std::string &filename,
-                                           std::vector<int> &params)
+bool Sculpture::Load_Params_From_Text_File(const std::string &filename, ProcessParams &params)
 {
     std::ifstream in(filename);
 
@@ -123,23 +123,23 @@ bool Sculpture::Load_Params_From_Text_File(const std::string &filename,
             continue;
 
         if (key == "Gain")
-            params[GAIN] = value;
+            params.Gain = value;
         else if (key == "Black_Level")
-            params[BLACK_LEVEL] = value;
+            params.Black_Level = value;
         else if (key == "Image_Gamma")
-            params[IMAGE_GAMMA] = value;
+            params.Image_Gamma = value;
         else if (key == "Color_Gain")
-            params[COLOR_GAIN] = value;
+            params.Color_Gain = value;
         else if (key == "Color_Hue")
-            params[COLOR_HUE] = value;
+            params.Color_Hue = value;
         else if (key == "H_Shift")
-            params[H_SHIFT] = value;
+            params.H_Shift = value;
         else if (key == "Rotate")
-            params[ROTATE] = value;
+            params.Rotate = value;
         else if (key == "Speed")
-            params[SPEED] = value;
+            params.Speed = value;
         else if (key == "Filter")
-            params[FILTER_TYPE] = value;
+            params.Filter_Type = value;
     }
 
     return true;
@@ -200,15 +200,15 @@ bool Sculpture::Load_New_Movie(string path)
     Load_Params_From_Text_File(temp_found_file,
                                VP[CURRENT].Player_Params);
 
-    g_gui_params.Gain.store(VP[CURRENT].Player_Params[GAIN]);
-    g_gui_params.Black_Level.store(VP[CURRENT].Player_Params[BLACK_LEVEL]);
-    g_gui_params.Color_Gain.store(VP[CURRENT].Player_Params[COLOR_GAIN]);
-    g_gui_params.Color_Hue.store(VP[CURRENT].Player_Params[COLOR_HUE]);
-    g_gui_params.Image_Gamma.store(VP[CURRENT].Player_Params[IMAGE_GAMMA]);
-    g_gui_params.H_Shift.store(VP[CURRENT].Player_Params[H_SHIFT]);
-    g_gui_params.Rotate.store(VP[CURRENT].Player_Params[ROTATE]);
-    g_gui_params.Speed.store(VP[CURRENT].Player_Params[SPEED]);
-    g_gui_params.Filter_Type.store(VP[CURRENT].Player_Params[FILTER_TYPE]);
+    g_gui_params.Gain.store(VP[CURRENT].Player_Params.Gain);
+    g_gui_params.Black_Level.store(VP[CURRENT].Player_Params.Black_Level);
+    g_gui_params.Color_Gain.store(VP[CURRENT].Player_Params.Color_Gain);
+    g_gui_params.Color_Hue.store(VP[CURRENT].Player_Params.Color_Hue);
+    g_gui_params.Image_Gamma.store(VP[CURRENT].Player_Params.Image_Gamma);
+    g_gui_params.H_Shift.store(VP[CURRENT].Player_Params.H_Shift);
+    g_gui_params.Rotate.store(VP[CURRENT].Player_Params.Rotate);
+    g_gui_params.Speed.store(VP[CURRENT].Player_Params.Speed);
+    g_gui_params.Filter_Type.store(VP[CURRENT].Player_Params.Filter_Type);
 
     g_gui_sliders_need_update.store(true);
 
@@ -464,18 +464,18 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     if (g_gui_pause.exchange(false))
     {
-        VP[CURRENT].Player_Params[PAUSE_TOGGLE] =
-            !VP[CURRENT].Player_Params[PAUSE_TOGGLE];
+        VP[CURRENT].Player_Params.Pause_Toggle =
+            !VP[CURRENT].Player_Params.Pause_Toggle;
     }
 
     if (g_gui_fast_forward.exchange(false))
     {
-        VP[CURRENT].Player_Params[FAST_FORWARD] = true;
+        VP[CURRENT].Player_Params.Fast_Forward = true;
     }
 
     if (g_gui_rewind.exchange(false))
     {
-        VP[CURRENT].Player_Params[REWIND] = 1;
+        VP[CURRENT].Player_Params.Rewind = 1;
     }
 
     /************************************* GUI BUTTONS DONE  ***********************************************/

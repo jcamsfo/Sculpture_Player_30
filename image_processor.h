@@ -1,6 +1,7 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include "process_params.h"
 
 
 
@@ -8,8 +9,9 @@
 void gauss_blur_inplace(cv::Mat &img_8u_or_32f3, int k);
 
 // Fused non-spatial math. Expects CV_32FC3 BGR in [0..255], in-place.
-void process_pixels(cv::Mat &bgr32f, const std::vector<int> &local_params);
+void process_pixels(cv::Mat &bgr32f, const ProcessParams &local_params);
 
+void process_pixels_dst(cv::Mat &ImageIn_F, const std::vector<int> &local_params);
 
 void process_image_with_shift_float(const cv::Mat& src,
                                     cv::Mat& dst,
@@ -24,7 +26,7 @@ class Image_Processor
 {
 public:
   Image_Processor(int rows, int cols); // preallocs internal buffers
-  cv::Mat &Process_Image(const cv::Mat &ImageIn_U, const std::vector<int> &local_params);
+cv::Mat &Process_Image(const cv::Mat &ImageIn_U, const ProcessParams &local_params);
 
 private:
   cv::Mat ShiftedTemp;       // reused 8U tmp for shifting

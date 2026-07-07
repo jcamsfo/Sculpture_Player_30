@@ -7,47 +7,6 @@
 
 extern long long Prog_Frame_Counter;
 
-enum Player_Param_Index
-{
-  GAIN = 0,
-  BLACK_LEVEL = 1,
-  COLOR_GAIN = 2,
-  COLOR_HUE = 3,
-  IMAGE_GAMMA = 4,
-  H_SHIFT = 5,
-  ROTATE = 6,  
-  SPEED = 7,
-  FILTER_TYPE = 8,
-
-  PAUSE_TOGGLE = 9,
-  FAST_FORWARD = 10,
-  REWIND = 11
-
-};
-
-  enum Default_Limits_Index
-  {
-    DEFAULT = 0,
-    LOWER_LIMIT = 1,
-    UPPER_LIMIT = 2,
-  };
-
-
-  struct GuiParams
-{
-    int Gain = 75;
-    int Black_Level = 0;
-    int Color_Gain = 100;
-    int Color_Hue = 0;
-    int Image_Gamma = 25;
-    int H_Shift = 0;
-    int Rotate = 0;
-    int Speed = 100;
-    int Filter_Type = 3;
-};
-
-
-
 inline std::atomic<bool> g_running = true;
 
 struct GuiParamsAtomic
@@ -76,7 +35,7 @@ inline GuiParamsAtomic g_gui_params;
 // LED_Red 0-120 
 // LED_Green 0-120  
 // LED_Blue 0-120  
-// hese will also work with globals  
+// these will also work with globals  
 
 
 inline std::mutex g_drop_path_mutex;

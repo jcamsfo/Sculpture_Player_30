@@ -5,6 +5,8 @@
 #include "config.h"
 #include "player_class_Mat.h"
 #include "image_processor.h"
+#include "process_params.h"
+
 
 using namespace std;
 // using namespace cv;
@@ -48,7 +50,7 @@ std::string Video_Player_With_Processing::Open_Image_File_Mat(const string &Imag
   
   Close_Image_File();
 
-  Player_Params = Player_Params_Defaults;
+  Player_Params = ProcessParams{};
 
   player_pause = false;
   display_name = Name_In;
@@ -187,19 +189,19 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
 
       Current_Frame = capMain.get(cv::CAP_PROP_POS_FRAMES);
 
-      if ((Player_Params[FAST_FORWARD] == 1) && (Current_Frame + jump_value < capLength))
+      if ((Player_Params.Fast_Forward== 1) && (Current_Frame + jump_value < capLength))
       {
         capMain.set(cv::CAP_PROP_POS_FRAMES, Current_Frame + jump_value);
-        Player_Params[FAST_FORWARD] = 0;
+        Player_Params.Fast_Forward = 0;
       }
 
-      if (Player_Params[REWIND] == 1)
+      if (Player_Params.Rewind == 1)
       {
         if (Current_Frame > jump_value)
           capMain.set(cv::CAP_PROP_POS_FRAMES, Current_Frame - jump_value);
         else
           capMain.set(cv::CAP_PROP_POS_FRAMES, 0);
-        Player_Params[REWIND] = 0;
+        Player_Params.Rewind = 0;
       }
 
       Location_Accum -= 100;
@@ -243,7 +245,7 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
                   0.0, ImageOut);
     }
 
-    Location_Accum += Player_Params[SPEED];
+    Location_Accum += Player_Params.Speed;
   }
 
   Current_Frame = capMain.get(cv::CAP_PROP_POS_FRAMES);
@@ -251,16 +253,17 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
 
 void Video_Player_With_Processing::copy_params_from_gui_player()
 {
-  Player_Params[GAIN] = g_gui_params.Gain.load();
-  Player_Params[BLACK_LEVEL] = g_gui_params.Black_Level.load();
-  Player_Params[COLOR_GAIN] = g_gui_params.Color_Gain.load();
-  Player_Params[COLOR_HUE] = g_gui_params.Color_Hue.load();
-  Player_Params[IMAGE_GAMMA] = g_gui_params.Image_Gamma.load();
-  Player_Params[H_SHIFT] = g_gui_params.H_Shift.load();
-  Player_Params[ROTATE] = g_gui_params.Rotate.load();
-  Player_Params[SPEED] = g_gui_params.Speed.load();
-  Player_Params[FILTER_TYPE] = g_gui_params.Filter_Type.load();
+    Player_Params.Gain        = g_gui_params.Gain.load();
+    Player_Params.Black_Level = g_gui_params.Black_Level.load();
+    Player_Params.Color_Gain  = g_gui_params.Color_Gain.load();
+    Player_Params.Color_Hue   = g_gui_params.Color_Hue.load();
+    Player_Params.Image_Gamma = g_gui_params.Image_Gamma.load();
+    Player_Params.H_Shift     = g_gui_params.H_Shift.load();
+    Player_Params.Rotate      = g_gui_params.Rotate.load();
+    Player_Params.Speed       = g_gui_params.Speed.load();
+    Player_Params.Filter_Type = g_gui_params.Filter_Type.load();
 }
+
 
 void Video_Player_With_Processing::H_Shift_Rotate(const cv::Mat &ImageIn_U,
                                                   cv::Mat &ImageOut_U,
@@ -318,14 +321,14 @@ void Video_Player_With_Processing::Process_New_Frame_Ext_Process(void)
   //             << "   Rotate " << Player_Params[ROTATE]
   //             << std::endl << endl ;
 
-  if (Player_Params[PAUSE_TOGGLE] == 0)
+  if (Player_Params.Pause_Toggle == 0)
     Grab_Frame_From_File_Mat(ImageIn_M, 1);
 
   auto player_grab = GetDeltaTime(player_total);
 
   // H_Shift_Rotate(ImageIn_M, ImageIn_M, Player_Params[H_SHIFT], false, Player_Params[ROTATE]);
 
-  H_Shift_Rotate(ImageIn_M, ImageIn_M_Shifted, Player_Params[H_SHIFT], false, Player_Params[ROTATE]);
+  H_Shift_Rotate(ImageIn_M, ImageIn_M_Shifted, Player_Params.H_Shift, false, Player_Params.Rotate);
 
   auto player_rotate = GetDeltaTime(player_total) - player_grab;
 

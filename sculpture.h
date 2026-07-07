@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include "scheduler.h"
+#include "process_params.h"
 
 class Sculpture
 {
@@ -33,7 +34,7 @@ public:
 
   uint16_t *Sculpture_Data_Mapped_Params = nullptr;
 
-  bool Load_Params_From_Text_File(const std::string &filename, std::vector<int> &params);
+  bool Load_Params_From_Text_File(const std::string &filename, ProcessParams &params);
   bool Load_New_Movie(string path);
   bool Save_Gui_Params_To_Text_File(const std::string &filename);
   bool Save_Video_For_Tonight();

@@ -2,6 +2,8 @@
 #include <vector>
 #include "globals.h"
 #include "measure2.h"
+#include "process_params.h"
+
 
 
 // for downstream LED Correction
@@ -87,7 +89,66 @@ void gauss_blur_inplace(cv::Mat &ImageInOut_F, int k)
 
   // LEAK TESTING  
 // -------- Fused non-spatial (with inv255 + clamp) --------
-void process_pixels(cv::Mat &ImageIn_F, const std::vector<int> &local_params)
+void process_pixels(cv::Mat &ImageIn_F, const ProcessParams &local_params)
+{
+
+  CV_Assert(ImageIn_F.type() == CV_32FC3);
+
+  const bool invert = local_params.Gain < 0;
+  const float gain_abs = std::abs(local_params.Gain) / 100.0f;
+  const float black_add = 2.0f * static_cast<float>(local_params.Black_Level);
+  const float t = static_cast<float>(local_params.Image_Gamma) / 100.0f;
+  const float hue = static_cast<float>(local_params.Color_Hue) * (float)CV_PI / 180.0f;
+  const float cg = static_cast<float>(local_params.Color_Gain) / 100.0f;
+  const float ccos = cg * std::cos(hue);
+  const float ssin = cg * std::sin(hue);
+  const float kGY_RY = -0.5093f;
+  const float kGY_BY = -0.1942f;
+  const float inv255 = 1.0f / 255.0f;
+
+  cv::parallel_for_(cv::Range(0, ImageIn_F.rows), [&](const cv::Range &r)
+                    {
+    for (int y = r.start; y < r.end; ++y) {
+      cv::Vec3f* row = ImageIn_F.ptr<cv::Vec3f>(y);
+      for (int x = 0; x < ImageIn_F.cols; ++x) {
+        float B=row[x][0], G=row[x][1], R=row[x][2];
+
+        if (invert){ R=255.f-R; G=255.f-G; B=255.f-B; }
+        R = R * gain_abs + black_add;
+        G = G * gain_abs + black_add;
+        B = B * gain_abs + black_add;
+
+        const float R2 = (R*R) * inv255;
+        const float G2 = (G*G) * inv255;
+        const float B2 = (B*B) * inv255;
+        R = (1.f - t)*R + t*R2;
+        G = (1.f - t)*G + t*G2;
+        B = (1.f - t)*B + t*B2;
+
+        const float Y  = 0.299f*R + 0.587f*G + 0.114f*B;
+        const float RY = R - Y;
+        const float BY = B - Y;
+
+        const float RYp = ccos*RY +  ssin*BY;
+        const float BYp = ccos*BY + (-ssin)*RY;
+
+        const float Rp  = Y + RYp;
+        const float Bp  = Y + BYp;
+        const float GYp = kGY_RY*RYp + kGY_BY*BYp;
+        const float Gp  = Y + GYp;
+
+        R = std::clamp(Rp, 0.f, 255.f);
+        G = std::clamp(Gp, 0.f, 255.f);
+        B = std::clamp(Bp, 0.f, 255.f);
+
+        row[x] = cv::Vec3f(B, G, R);
+      }
+    } });
+}
+
+
+
+void process_pixels_dst(cv::Mat &ImageIn_F, const std::vector<int> &local_params)
 {
 
   CV_Assert(ImageIn_F.type() == CV_32FC3);
@@ -145,6 +206,7 @@ void process_pixels(cv::Mat &ImageIn_F, const std::vector<int> &local_params)
 }
 
 
+
 // for downstream LED Correction
 void process_image_with_shift_float(const cv::Mat &src,
                                     cv::Mat &dst,
@@ -158,7 +220,7 @@ void process_image_with_shift_float(const cv::Mat &src,
     src.copyTo(dst);
 
   // LEAK TESTING
-  process_pixels(dst, p);
+  process_pixels_dst(dst, p);
 
    // LEAK TESTING 
   if (p[FILTER_TYPE])
@@ -185,8 +247,9 @@ Image_Processor::Image_Processor(int rows, int cols)
 }
 
 // 8 bits in float out  for use in player class only
+// 8 bits in float out  for use in player class only
 cv::Mat &Image_Processor::Process_Image(const cv::Mat &ImageIn_U,
-                                        const std::vector<int> &local_params)
+                                        const ProcessParams &local_params)
 {
   CV_Assert(ImageIn_U.type() == CV_8UC3);
 
@@ -205,8 +268,8 @@ cv::Mat &Image_Processor::Process_Image(const cv::Mat &ImageIn_U,
 
   // optional blur on 32F
       // LEAK TESTING
-  if (local_params[FILTER_TYPE])
-    gauss_blur_inplace(Image_Processed_F, local_params[FILTER_TYPE]);
+  if (local_params.Filter_Type)
+    gauss_blur_inplace(Image_Processed_F, local_params.Filter_Type);
 
   auto process_total_delta = GetDeltaTime(process_start);
 

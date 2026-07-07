@@ -5,6 +5,8 @@
 #include <opencv2/opencv.hpp>
 #include "measure2.h"
 #include "image_processor.h"
+#include "process_params.h"
+
 
 using namespace std;
 using namespace cv;
@@ -43,42 +45,7 @@ private:
 
   bool Check_File_Type;
 
-  inline static const vector<int> Player_Params_Defaults{
-      75, // GAIN
-      0,   // BLACK_LEVEL
-      100, // COLOR_GAIN
-      0,   // COLOR_HUE
-      25,  // IMAGE_GAMMA
-      0, // H_SHIFT
-      0,   // H_ROTATE
-      100, // SPEED
-      3,   // FILTER_TYPE
 
-      0, // PAUSE_TOGGLE
-      0, // FAST_FORWARD
-      0, // REWIND
-      0  // QUIT
-
-  };
-
-  inline static const vector<vector<int>>
-      Player_Default_Limits{
-          {75, -100, 200}, // GAIN
-          {0, -100, 100},   // BLACK_LEVEL
-          {100, 0, 200},    // COLOR_GAIN
-          {0, -180, 180},   // COLOR_HUE
-          {25, 0, 100},     // IMAGE_GAMMA
-          {0, 0, 1023},   // H_SHIFT
-          {0, -100, 100},   // ROTATE
-          {100, 0, 300},    // SPEED
-          {3, 0, 10},       // FILTER_TYPE
-
-          {0, 0, 1}, // PAUSE_TOGGLE
-          {0, 0, 1}, // FAST_FORWARD
-          {0, 0, 1}, // REWIND
-          {0, 0, 1}, // QUIT
-
-      };
 
 public:
   // move back to private
@@ -108,7 +75,9 @@ public:
 
   string Last_Good_Filename;
 
-  vector<int> Player_Params;
+  // vector<int> Player_Params;
+
+  ProcessParams Player_Params;
 
   string display_name;
 
