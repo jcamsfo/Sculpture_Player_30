@@ -62,10 +62,10 @@
    1.   DONE! Change the folder stuff to be cleaner with a files folder
    2.   DONE! Too many Params floating around everywhere  should change to a structure from vector
             and make them global (like I tried in Ver 28)
-   3.   Should have the downstream params and the regular the same "type" of structure
+   3.   DONE! Should have the downstream params and the regular the same "type" of structure
             need to add RGB gains
-   4.   Move all of the file reading and parameter reading etc somewhere else I think to clean it
-   5.   Move all of the time of day and start time to it's own cpp and h
+   4.   DONE! Move all of the file reading and parameter reading etc somewhere else I think to clean it
+   5.   DONE! Move all of the time of day and start time to it's own cpp and h
    6.   Done! Fix memory leak that is still there
  
 

@@ -13,8 +13,6 @@
 #include <cstring>
 #include "config.h"
 
-
-
 using Clock = std::chrono::steady_clock;
 
 // FIXED OLD FTDI LOCKUP
@@ -137,7 +135,7 @@ bool FTDI_Write_Buffer(
     return true;
 }
 
-// FIXED OLD FTDI LOCKUP
+
 // FIXED OLD FTDI LOCKUP
 void FTDI_Thread()
 {
@@ -198,11 +196,7 @@ void FTDI_Thread()
 void Queue_FTDI_Write(const uint16_t *buffer, DWORD buffer_size_bytes)
 {
     std::lock_guard<std::mutex> lock(g_ftdi_write_mutex);
-
     int count = buffer_size_bytes / sizeof(uint16_t);
-
-    // g_ftdi_write_buffer.assign(buffer, buffer + count);
     memcpy(g_ftdi_write_buffer.data(), buffer, buffer_size_bytes);
-
     g_ftdi_write_ready = true;
 }

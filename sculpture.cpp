@@ -145,13 +145,13 @@ bool Sculpture::Load_New_Movie(string path)
 
         Load_Gui_Params_From_Text_File(
             "swirl_files/Image_Corrections_Defaults.txt",
-            VP[CURRENT].Player_Params);
+            VP[ON_DECK].Player_Params);
 
-        copy_VIDEO_params_to_gui();
+        // copy_VIDEO_params_to_gui(ON_DECK);
 
         Save_Gui_Params_To_Text_File(
             new_file.string(),
-            VP[CURRENT].Player_Params);
+            VP[ON_DECK].Player_Params);
 
         temp_found_file = new_file.string();
     }
@@ -160,8 +160,8 @@ bool Sculpture::Load_New_Movie(string path)
 
     cout << "\nMOVIE INFO FILE: " << temp_found_file << endl;
 
-    Load_Gui_Params_From_Text_File(temp_found_file, VP[CURRENT].Player_Params);
-    copy_VIDEO_params_to_gui();
+    Load_Gui_Params_From_Text_File(temp_found_file, VP[ON_DECK].Player_Params);
+    // copy_VIDEO_params_to_gui(ON_DECK);
 
     {
         std::lock_guard<std::mutex> lock(g_current_movie_name_mutex);
@@ -175,7 +175,6 @@ bool Sculpture::Load_New_Movie(string path)
 //************************  MOVIE SELECTION FUNCTIONS DONE  ************************************/
 //**********************************************************************************************/
 
-
 //**********************************************************************************************/
 //***************************  GUI SYNCING FUNCTIONS  ******************************************/
 void Sculpture::check_gui_buttons()
@@ -185,7 +184,7 @@ void Sculpture::check_gui_buttons()
     {
         if (!Current_Movie_Info_File.empty())
         {
-            copy_VIDEO_params_from_gui();
+            copy_VIDEO_params_from_gui(CURRENT);
             Save_Gui_Params_To_Text_File(Current_Movie_Info_File, VP[CURRENT].Player_Params);
             std::cout << "Saved image controls to "
                       << Current_Movie_Info_File << std::endl;
@@ -197,7 +196,7 @@ void Sculpture::check_gui_buttons()
         if (!Current_Movie_Info_File.empty())
         {
             Load_Gui_Params_From_Text_File(Current_Movie_Info_File, VP[CURRENT].Player_Params);
-            copy_VIDEO_params_to_gui();
+            copy_VIDEO_params_to_gui(CURRENT);
             std::cout << "Loaded image controls from "
                       << Current_Movie_Info_File << std::endl;
         }
@@ -229,7 +228,7 @@ void Sculpture::check_gui_buttons()
     if (g_gui_reset_video_controls.exchange(false))
     {
         Load_Gui_Params_From_Text_File("swirl_files/Image_Corrections_Defaults.txt", VP[CURRENT].Player_Params);
-        copy_VIDEO_params_to_gui();
+        copy_VIDEO_params_to_gui(CURRENT);
 
         std::cout << "Loading Video Defaults" << std::endl;
     }
@@ -283,33 +282,32 @@ void Sculpture::check_gui_buttons()
     copy_LED_params_from_gui();
 }
 
-void Sculpture::copy_VIDEO_params_to_gui()
+void Sculpture::copy_VIDEO_params_to_gui(int which_VP)
 {
-
-    g_gui_params.Gain.store(VP[CURRENT].Player_Params.Gain);
-    g_gui_params.Black_Level.store(VP[CURRENT].Player_Params.Black_Level);
-    g_gui_params.Color_Gain.store(VP[CURRENT].Player_Params.Color_Gain);
-    g_gui_params.Color_Hue.store(VP[CURRENT].Player_Params.Color_Hue);
-    g_gui_params.Image_Gamma.store(VP[CURRENT].Player_Params.Image_Gamma);
-    g_gui_params.H_Shift.store(VP[CURRENT].Player_Params.H_Shift);
-    g_gui_params.Rotate.store(VP[CURRENT].Player_Params.Rotate);
-    g_gui_params.Speed.store(VP[CURRENT].Player_Params.Speed);
-    g_gui_params.Filter_Type.store(VP[CURRENT].Player_Params.Filter_Type);
+    g_gui_params.Gain.store(VP[which_VP].Player_Params.Gain);
+    g_gui_params.Black_Level.store(VP[which_VP].Player_Params.Black_Level);
+    g_gui_params.Color_Gain.store(VP[which_VP].Player_Params.Color_Gain);
+    g_gui_params.Color_Hue.store(VP[which_VP].Player_Params.Color_Hue);
+    g_gui_params.Image_Gamma.store(VP[which_VP].Player_Params.Image_Gamma);
+    g_gui_params.H_Shift.store(VP[which_VP].Player_Params.H_Shift);
+    g_gui_params.Rotate.store(VP[which_VP].Player_Params.Rotate);
+    g_gui_params.Speed.store(VP[which_VP].Player_Params.Speed);
+    g_gui_params.Filter_Type.store(VP[which_VP].Player_Params.Filter_Type);
 
     g_gui_sliders_need_update.store(true);
 }
 
-void Sculpture::copy_VIDEO_params_from_gui()
+void Sculpture::copy_VIDEO_params_from_gui(int which_VP)
 {
-    VP[CURRENT].Player_Params.Gain = g_gui_params.Gain.load();
-    VP[CURRENT].Player_Params.Black_Level = g_gui_params.Black_Level.load();
-    VP[CURRENT].Player_Params.Color_Gain = g_gui_params.Color_Gain.load();
-    VP[CURRENT].Player_Params.Color_Hue = g_gui_params.Color_Hue.load();
-    VP[CURRENT].Player_Params.Image_Gamma = g_gui_params.Image_Gamma.load();
-    VP[CURRENT].Player_Params.H_Shift = g_gui_params.H_Shift.load();
-    VP[CURRENT].Player_Params.Rotate = g_gui_params.Rotate.load();
-    VP[CURRENT].Player_Params.Speed = g_gui_params.Speed.load();
-    VP[CURRENT].Player_Params.Filter_Type = g_gui_params.Filter_Type.load();
+    VP[which_VP].Player_Params.Gain = g_gui_params.Gain.load();
+    VP[which_VP].Player_Params.Black_Level = g_gui_params.Black_Level.load();
+    VP[which_VP].Player_Params.Color_Gain = g_gui_params.Color_Gain.load();
+    VP[which_VP].Player_Params.Color_Hue = g_gui_params.Color_Hue.load();
+    VP[which_VP].Player_Params.Image_Gamma = g_gui_params.Image_Gamma.load();
+    VP[which_VP].Player_Params.H_Shift = g_gui_params.H_Shift.load();
+    VP[which_VP].Player_Params.Rotate = g_gui_params.Rotate.load();
+    VP[which_VP].Player_Params.Speed = g_gui_params.Speed.load();
+    VP[which_VP].Player_Params.Filter_Type = g_gui_params.Filter_Type.load();
 }
 
 void Sculpture::copy_LED_params_from_gui()
@@ -343,7 +341,6 @@ void Sculpture::copy_LED_params_to_gui()
 }
 //***************************  GUI SYNCING FUNCTIONS DONE **************************************/
 //**********************************************************************************************/
-
 
 // void Sculpture::Release_Working_Mats()
 // {
@@ -411,14 +408,15 @@ bool Sculpture::check_schedule()
     return start_fade_local;
 }
 
-
-
 //**********************************************************************************************/
 //***********************************  MAIN VIDEO LOOP *****************************************/
 bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 {
     bool start_fade = false;
     static long long process_swap_delta_stored = 0;
+    static bool gui_updated_after_fade_ = false;
+
+    bool Process_Frame_Delay = false;
 
     // check for new video dropped
     if (g_new_drop_path.exchange(false))
@@ -435,28 +433,27 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         start_fade = true;
     }
 
-
     if (check_schedule())
         start_fade = true;
 
     check_gui_buttons();
 
-
     process_start_ = Clock::now();
 
-    // start the fading process
-    if (start_fade) // SWAP so that it's always fading in the same direction  less confusing
+    if (start_fade)
     {
         std::swap(VP[CURRENT], VP[ON_DECK]);
-        process_swap_delta_stored = GetDeltaTime(process_start_);
+        gui_updated_after_fade_ = false;
+        Process_Frame_Delay = true;
     }
+
+    if (fade_done_ && !start_fade)
+        copy_VIDEO_params_from_gui(CURRENT);
 
     VP[CURRENT].Process_New_Frame_Ext_Process();
 
     if (!fade_done_ || start_fade)
-    {
         VP[ON_DECK].Process_New_Frame_Ext_Process();
-    }
 
     /******************************  IMAGE PROCESS BOTH IMAGES DONE *********************/
 
@@ -466,6 +463,12 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     // Fade to New Image when triggered  Float Image In Res
     Fade_To_A(VP[CURRENT].ImageMain_FM, VP[ON_DECK].ImageMain_FM, Cross_Faded_F, Fade_Time, fade_done_, start_fade);
+
+    if (fade_done_ && !gui_updated_after_fade_)
+    {
+        copy_VIDEO_params_to_gui(CURRENT);
+        gui_updated_after_fade_ = true;
+    }
 
     // Convert Cross_Faded_F for Display
     Cross_Faded_F.convertTo(Main_Display_M, CV_8UC3); // Main Visual Output to Screen
@@ -570,9 +573,6 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 }
 //***********************************  MAIN VIDEO LOOP DONE ************************************/
 //**********************************************************************************************/
-
-
-
 
 void Sculpture::Fade_To_A(const cv::Mat &A, const cv::Mat &B, cv::Mat &dst, float fade_length_sec, bool &fade_done, bool &start_fade_local)
 {

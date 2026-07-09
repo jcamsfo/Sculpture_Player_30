@@ -3,56 +3,6 @@
 
 #include "config.h"
 
-// enum Player_Param_Index
-// {
-//   GAIN = 0,
-//   BLACK_LEVEL,
-//   COLOR_GAIN,
-//   COLOR_HUE,
-//   IMAGE_GAMMA,
-//   H_SHIFT,
-//   ROTATE,
-//   SPEED,
-//   FILTER_TYPE,
-
-//   RED_GAIN,
-//   GREEN_GAIN,
-//   BLUE_GAIN
-
-// };
-
-// enum Default_Index
-// {
-//   DEFAULT,
-//   MIN,
-//   MAX
-// };
-
-// struct ParamLimit
-// {
-//   int Default;
-//   int Min;
-//   int Max;
-// };
-
-// // constexpr int NUM_PARAMS = 16;
-
-// inline constexpr ParamLimit Process_Default_Limits[] =
-//     {
-//         {100, -100, 200}, // GAIN
-//         {0, -100, 100},   // BLACK_LEVEL
-//         {100, 0, 200},    // COLOR_GAIN
-//         {0, -180, 180},   // COLOR_HUE
-//         {25, 0, 100},     // IMAGE_GAMMA
-//         {512, 0, 1023},   // H_SHIFT
-//         {0, -100, 100},   // ROTATE
-//         {100, 0, 300},    // SPEED
-//         {3, 0, 10},       // FILTER_TYPE
-
-//         {100, 0, 130}, // Red_Gain
-//         {100, 0, 130}, // Green_Gain
-//         {100, 0, 130}  // Blue_Gain
-// };
 
 struct ProcessParams
 {
@@ -70,9 +20,6 @@ struct ProcessParams
   int Green_Gain = Process_Default_Limits[GREEN_GAIN].Default;
   int Blue_Gain = Process_Default_Limits[BLUE_GAIN].Default;
 };
-
-
-
 
 
 enum Control_Index

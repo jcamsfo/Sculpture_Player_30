@@ -15,18 +15,10 @@ using Clock = std::chrono::steady_clock;
 
 // general terminology: _F is float _U is UMAt _FU is both _M is Mat
 
-//
+
 Video_Player_With_Processing::Video_Player_With_Processing(void)
     : Player_Proc(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS) // <-- construct the ImageProcessor here
 {
-  // KEY:   F -> float type (vs unsigned char)     U ->  UMat (vs Mat)
-  // ImageInNew_U.create(IMAGE_ROWS, IMAGE_COLS, CV_8UC(3));
-  // ImageInOld_U.create(IMAGE_ROWS, IMAGE_COLS, CV_8UC(3));
-
-  // Temp_Read_Movie.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC(3));
-
-  // Ones_FU.create(IMAGE_ROWS, IMAGE_COLS, CV_32FC(3));
-  // Ones_FU = cv::Scalar(255.0, 255.0, 255.0);
 
   ImageIn_M.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC3);
   ImageIn_M_Shifted.create(SCREEN_IMAGE_ROWS, SCREEN_IMAGE_COLS, CV_8UC3);
@@ -145,10 +137,6 @@ std::string Video_Player_With_Processing::Open_Image_File_Mat(const string &Imag
   }
 }
 
-// void Video_Player_With_Processing::Close_Image_File(void)
-// {
-//   capMain.release();
-// }
 
 void Video_Player_With_Processing::Close_Image_File()
 {
@@ -235,18 +223,6 @@ inline void Video_Player_With_Processing::Grab_Frame_From_File_Mat(cv::Mat &Imag
   Current_Frame = capMain.get(cv::CAP_PROP_POS_FRAMES);
 }
 
-void Video_Player_With_Processing::copy_params_from_gui_player()
-{
-  Player_Params.Gain = g_gui_params.Gain.load();
-  Player_Params.Black_Level = g_gui_params.Black_Level.load();
-  Player_Params.Color_Gain = g_gui_params.Color_Gain.load();
-  Player_Params.Color_Hue = g_gui_params.Color_Hue.load();
-  Player_Params.Image_Gamma = g_gui_params.Image_Gamma.load();
-  Player_Params.H_Shift = g_gui_params.H_Shift.load();
-  Player_Params.Rotate = g_gui_params.Rotate.load();
-  Player_Params.Speed = g_gui_params.Speed.load();
-  Player_Params.Filter_Type = g_gui_params.Filter_Type.load();
-}
 
 void Video_Player_With_Processing::H_Shift_Rotate(const cv::Mat &ImageIn_U,
                                                   cv::Mat &ImageOut_U,
@@ -296,18 +272,10 @@ void Video_Player_With_Processing::H_Shift_Rotate(const cv::Mat &ImageIn_U,
   // ImageOut_U = ImageIn_U.clone();
 }
 
+
 void Video_Player_With_Processing::Process_New_Frame_Ext_Process(void)
 {
-
   auto player_total = Clock::now();
-
-  copy_params_from_gui_player();
-
-  // if (Prog_Frame_Counter % 60 == 0)
-  //   std::cout << endl << "Filter " << Player_Params[FILTER_TYPE]
-  //             << "   HShift " << Player_Params[H_SHIFT]
-  //             << "   Rotate " << Player_Params[ROTATE]
-  //             << std::endl << endl ;
 
   if (Control_Values.Pause_Toggle == 0)
     Grab_Frame_From_File_Mat(ImageIn_M, 1);
@@ -326,9 +294,6 @@ void Video_Player_With_Processing::Process_New_Frame_Ext_Process(void)
   ImageMain_FM = Player_Proc.Process_Image(ImageIn_M_Shifted, Player_Params);
 
   auto player_process = GetDeltaTime(player_total) - player_grab - player_rotate;
-
-  // non class general version    8 bits in float out
-  // ImageMain_FM = process_image(ImageIn_M, Player_Params);  // 3.1 - 4 ms
 
   // convert for displaying
   ImageMain_FM.convertTo(VideoDisplay, CV_8UC3);

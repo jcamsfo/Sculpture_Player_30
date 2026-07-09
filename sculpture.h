@@ -35,18 +35,9 @@ public:
   void check_gui_buttons();
   void copy_LED_params_from_gui();
   void copy_LED_params_to_gui();
-  void copy_VIDEO_params_to_gui();
-  void copy_VIDEO_params_from_gui();
+  void copy_VIDEO_params_to_gui(int which_VP);
+  void copy_VIDEO_params_from_gui(int which_VP);
   bool check_schedule();
-
-  // bool Load_Gui_Params_From_Text_File(const std::string &filename, ProcessParams &params);
-  // bool Save_Gui_Params_To_Text_File(const std::string &filename);
-
-  // bool Load_LED_Corrections_From_Text_File(const std::string &filename);
-  // bool Save_LED_Corrections_To_Text_File(const std::string &filename);
-
-  // bool Save_Video_For_Tonight();
-  // bool Read_Video_For_Tonight(bool Video_On_Time);
 
   bool Load_Tonights_Video(bool Video_On_Time);
 
@@ -93,8 +84,9 @@ public:
 
   bool Advance(std::array<cv::Mat, 4> &outputs);
 
-  // Return a const ref to an internal buffer
   void Fade_To_A(const cv::Mat &A, const cv::Mat &B, cv::Mat &dst, float fade_length_sec, bool &fade_done, bool &start_fade);
+
+  void Fade_To_A_Params(const ProcessParams &A, const ProcessParams &B, ProcessParams &dst, float fade_length_sec, bool &fade_done, bool &start_fade_X);
 
   // CV_32FC3, source // CV_32FC3, SCULPTURE_IMAGE_ROWS x SCULPTURE_IMAGE_COLS
   // void Save_Samples_Grid_To_Buffer_RGB(const cv::Mat &ImageIn_F, cv::Mat &ImageSubSampled_F);

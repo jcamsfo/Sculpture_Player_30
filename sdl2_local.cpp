@@ -268,8 +268,6 @@ bool sdl2_multi_imshow(const std::string &window_name, const cv::Mat &image, int
 }
 
 
-
-
 void Update_And_Show_Main_Displays_sdl2(std::array<cv::Mat, 4> &Main_Display)
 {
     static bool first_time = true;
@@ -288,8 +286,6 @@ void Update_And_Show_Main_Displays_sdl2(std::array<cv::Mat, 4> &Main_Display)
 }
 
 
-
-// Change return type from void to bool
 bool Update_And_Show_Main_Displays_sdl2_2(std::array<cv::Mat, 4> &Main_Display)
 {
     if (!Main_Display[2].empty())
