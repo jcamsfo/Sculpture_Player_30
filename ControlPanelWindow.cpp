@@ -114,6 +114,51 @@ void ControlPanelWindow::_onFilterValueChanged()
     g_gui_params.Filter_Type.store(_slider_params.at(_UIParamKeys::FILTER).get_value());
 }
 
+void ControlPanelWindow::_onGainLEDValueChanged()
+{
+    g_gui_LED_params.Gain.store(_slider_params.at(_UIParamKeys::GAIN_LED).get_value());
+}
+
+void ControlPanelWindow::_onBlackLEDValueChanged()
+{
+    g_gui_LED_params.Black_Level.store(_slider_params.at(_UIParamKeys::BLACK_LED).get_value());
+}
+
+void ControlPanelWindow::_onColorLEDValueChanged()
+{
+    g_gui_LED_params.Color_Gain.store(_slider_params.at(_UIParamKeys::COLOR_LED).get_value());
+}
+
+void ControlPanelWindow::_onHueLEDValueChanged()
+{
+    g_gui_LED_params.Color_Hue.store(_slider_params.at(_UIParamKeys::HUE_LED).get_value());
+}
+
+void ControlPanelWindow::_onGammaLEDValueChanged()
+{
+    g_gui_LED_params.Image_Gamma.store(_slider_params.at(_UIParamKeys::GAMMA_LED).get_value());
+}
+
+void ControlPanelWindow::_onHShiftLEDValueChanged()
+{
+    g_gui_LED_params.H_Shift.store(_slider_params.at(_UIParamKeys::H_SHIFT_LED).get_value());
+}
+
+void ControlPanelWindow::_onRedGainLEDValueChanged()
+{
+    g_gui_LED_params.Red_Gain.store(_slider_params.at(_UIParamKeys::RED_GAIN_LED).get_value());
+}
+
+void ControlPanelWindow::_onGreenGainLEDValueChanged()
+{
+    g_gui_LED_params.Green_Gain.store(_slider_params.at(_UIParamKeys::GREEN_GAIN_LED).get_value());
+}
+
+void ControlPanelWindow::_onBlueGainLEDValueChanged()
+{
+    g_gui_LED_params.Blue_Gain.store(_slider_params.at(_UIParamKeys::BLUE_GAIN_LED).get_value());
+}
+
 std::string ControlPanelWindow::_sliderParamsToMockJSON()
 {
     std::string mock_json;
@@ -136,6 +181,11 @@ void ControlPanelWindow::_onSaveImageControlsClicked()
     g_gui_save_image_params.store(true);
 }
 
+void ControlPanelWindow::_onLoadImageControlsClicked()
+{
+    g_gui_load_image_params.store(true);
+}
+
 void ControlPanelWindow::_onSaveVideoForTonightClicked()
 {
     g_gui_save_video_for_tonight.store(true);
@@ -143,10 +193,7 @@ void ControlPanelWindow::_onSaveVideoForTonightClicked()
 
 void ControlPanelWindow::_onResetButtonClicked()
 {
-    for (auto &[key, value] : _slider_params)
-    {
-        value.restore_default();
-    }
+    g_gui_reset_video_controls.store(true);
 }
 
 void ControlPanelWindow::_onPauseClicked()
@@ -164,11 +211,31 @@ void ControlPanelWindow::_onRewindClicked()
     g_gui_rewind.store(true);
 }
 
+void ControlPanelWindow::_onSaveLEDControlsClicked()
+{
+    g_gui_save_LED_params.store(true);
+}
+
+void ControlPanelWindow::_onShowGridClicked()
+{
+    g_gui_show_grid.store(!g_gui_show_grid.load());
+}
+
+void ControlPanelWindow::_onEnableWhiteDieClicked()
+{
+    g_gui_enable_white_die.store(!g_gui_enable_white_die.load());
+}
+
+void ControlPanelWindow::_onResetLEDsClicked()
+{
+    g_gui_reset_LED_corrections.store(true);
+}
+
 ControlPanelWindow::ControlPanelWindow()
 {
     set_title(_TITLE.data());
 
-    set_default_size(400, 620);
+    set_default_size(350, 590);
     set_resizable(true);
 
     _scroll.set_policy(Gtk::PolicyType::NEVER, Gtk::PolicyType::AUTOMATIC);
@@ -211,8 +278,25 @@ ControlPanelWindow::ControlPanelWindow()
     Gtk::Separator drop_sliders_separator(Gtk::Orientation::HORIZONTAL);
     _scroll_vbox.append(drop_sliders_separator);
 
+    auto is_LED_slider = [](const auto &name)
+    {
+        return name == _UIParamKeys::GAIN_LED ||
+               name == _UIParamKeys::BLACK_LED ||
+               name == _UIParamKeys::COLOR_LED ||
+               name == _UIParamKeys::HUE_LED ||
+               name == _UIParamKeys::GAMMA_LED ||
+               name == _UIParamKeys::H_SHIFT_LED ||
+               name == _UIParamKeys::RED_GAIN_LED ||
+               name == _UIParamKeys::GREEN_GAIN_LED ||
+               name == _UIParamKeys::BLUE_GAIN_LED;
+    };
+
     for (const _SliderTraits &traits : _SLIDER_TRAITS)
     {
+
+        if (is_LED_slider(traits.name))
+            continue;
+
         Gtk::Box row(Gtk::Orientation::HORIZONTAL, 4);
         row.set_margin_top(0);
 
@@ -256,26 +340,33 @@ ControlPanelWindow::ControlPanelWindow()
     Gtk::Box button_box(Gtk::Orientation::HORIZONTAL, 10);
     button_box.set_halign(Gtk::Align::CENTER);
 
-    _save_image_button.set_label("SAVE IMAGE CONTROLS");
+    _save_image_button.set_label("SAVE IMAGE\nPRESETS");
     _save_image_button.set_name("btn_save_image");
     _save_image_button.signal_clicked().connect(
         sigc::mem_fun(*this, &ControlPanelWindow::_onSaveImageControlsClicked),
         false);
     button_box.append(_save_image_button);
 
-    _save_tonight_button.set_label("SAVE VIDEO FOR TONIGHT");
-    _save_tonight_button.set_name("btn_save_tonight");
-    _save_tonight_button.signal_clicked().connect(
-        sigc::mem_fun(*this, &ControlPanelWindow::_onSaveVideoForTonightClicked),
+    _load_image_button.set_label("LOAD IMAGE\nPRESETS");
+    _load_image_button.set_name("btn_load_image");
+    _load_image_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onLoadImageControlsClicked),
         false);
-    button_box.append(_save_tonight_button);
+    button_box.append(_load_image_button);
 
-    _reset_button.set_label("RESET");
+    _reset_button.set_label("RESET\nCONTROLS");
     _reset_button.set_name("btn_reset");
     _reset_button.signal_clicked().connect(
         sigc::mem_fun(*this, &ControlPanelWindow::_onResetButtonClicked),
         false);
     button_box.append(_reset_button);
+
+    _save_tonight_button.set_label("SAVE VIDEO\nFOR TONIGHT");
+    _save_tonight_button.set_name("btn_save_tonight");
+    _save_tonight_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onSaveVideoForTonightClicked),
+        false);
+    button_box.append(_save_tonight_button);
 
     _scroll_vbox.append(button_box);
 
@@ -327,6 +418,95 @@ ControlPanelWindow::ControlPanelWindow()
 
     _scroll_vbox.append(time_row);
 
+    Gtk::Label led_label("LED Calibration (Do Not Change)");
+    led_label.add_css_class("section-label");
+    led_label.add_css_class("led-header");
+    led_label.set_halign(Gtk::Align::START);
+    led_label.set_margin_top(50);
+    led_label.set_margin_bottom(0);
+    _scroll_vbox.append(led_label);
+
+    Gtk::Separator LED_separator(Gtk::Orientation::HORIZONTAL);
+    LED_separator.set_margin_top(5);
+    LED_separator.set_margin_bottom(10);
+    _scroll_vbox.append(LED_separator);
+
+    for (const _SliderTraits &traits : _SLIDER_TRAITS)
+    {
+        if (!is_LED_slider(traits.name))
+            continue;
+
+        Gtk::Box row(Gtk::Orientation::HORIZONTAL, 4);
+        row.set_margin_top(0);
+
+        Gtk::Label label(traits.name.data());
+        label.add_css_class("section-label");
+        label.set_xalign(0);
+        label.set_size_request(70, -1);
+
+        Glib::RefPtr<Gtk::Adjustment> adjustment{
+            Gtk::Adjustment::create(
+                traits.default_value,
+                traits.min_value,
+                traits.max_value,
+                traits.increment)};
+
+        adjustment->signal_value_changed().connect(
+            sigc::mem_fun(*this, traits.value_changed_callback),
+            false);
+
+        _slider_params.emplace(
+            traits.name,
+            _UIParamValue(adjustment, traits.default_value));
+
+        Gtk::Scale slider{adjustment, Gtk::Orientation::HORIZONTAL};
+        slider.set_hexpand(true);
+        slider.set_draw_value(false);
+
+        Gtk::SpinButton spin_button{adjustment};
+        spin_button.set_size_request(65, -1);
+
+        row.append(label);
+        row.append(slider);
+        row.append(spin_button);
+
+        _scroll_vbox.append(row);
+    }
+
+    Gtk::Box LED_button_box(Gtk::Orientation::HORIZONTAL, 10);
+    LED_button_box.set_halign(Gtk::Align::CENTER);
+    LED_button_box.set_margin_top(10);
+
+    _save_LED_button.set_label("SAVE LED\nPRESETS");
+    _save_LED_button.set_name("btn_save_LED");
+    _save_LED_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onSaveLEDControlsClicked),
+        false);
+    LED_button_box.append(_save_LED_button);
+
+    _load_LED_button.set_label("RESET LED\nPRESETS");
+    _load_LED_button.set_name("btn_load_LED");
+    _load_LED_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onResetLEDsClicked),
+        false);
+    LED_button_box.append(_load_LED_button);
+
+    _show_grid_button.set_label("SHOW\nSAMPLE GRID");
+    _show_grid_button.set_name("btn_show_grid");
+    _show_grid_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onShowGridClicked),
+        false);
+    LED_button_box.append(_show_grid_button);
+
+    _enable_white_die_button.set_label("WHITE DIE\nCALIBRATE");
+    _enable_white_die_button.set_name("btn_enable_white_die");
+    _enable_white_die_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onEnableWhiteDieClicked),
+        false);
+    LED_button_box.append(_enable_white_die_button);
+
+    _scroll_vbox.append(LED_button_box);
+
     Glib::RefPtr<Gtk::CssProvider> css{Gtk::CssProvider::create()};
 
     css->load_from_data(R"(
@@ -335,7 +515,7 @@ ControlPanelWindow::ControlPanelWindow()
         .drop-zone {
             color: white;
             font-size: 12pt;
-            background-color: #3c3f41;
+            background-color: #712e97ff;
             border-radius: 8px;
             padding: 14px;
         }
@@ -420,6 +600,29 @@ ControlPanelWindow::ControlPanelWindow()
             background-color: #2a7edf;
         }
 
+
+        #btn_load_image,
+        #btn_load_image label {
+            background-color: #4a9eff;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+        #btn_load_image:hover,
+        #btn_load_image:hover label {
+            background-color: #3a8eef;
+        }
+
+        #btn_load_image:active,
+        #btn_load_image:active label {
+            background-color: #2a7edf;
+        }
+            
+        
+
         #btn_save_tonight,
         #btn_save_tonight label {
             background-color: #4a9eff;
@@ -496,6 +699,53 @@ ControlPanelWindow::ControlPanelWindow()
         #btn_rewind:active label {
             background-color: #255030;
         }
+
+        #btn_save_LED,
+        #btn_save_LED label,
+        #btn_load_LED,
+        #btn_load_LED label,
+        #btn_show_grid,
+        #btn_show_grid label,
+        #btn_enable_white_die,
+        #btn_enable_white_die label {
+            background-color: #4a9eff;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+        #btn_save_LED:hover,
+        #btn_save_LED:hover label,
+        #btn_load_LED:hover,
+        #btn_load_LED:hover label,
+        #btn_show_grid:hover,
+        #btn_show_grid:hover label,
+        #btn_enable_white_die:hover,
+        #btn_enable_white_die:hover label {
+            background-color: #3a8eef;
+        }
+
+        #btn_save_LED:active,
+        #btn_save_LED:active label,
+        #btn_load_LED:active,
+        #btn_load_LED:active label,
+        #btn_show_grid:active,
+        #btn_show_grid:active label,
+        #btn_enable_white_die:active,
+        #btn_enable_white_die:active label {
+            background-color: #2a7edf;
+        }
+
+            
+        
+
+
+        .led-header {
+        font-size: 16pt;
+}
+
     )");
 
     Gtk::StyleContext::add_provider_for_display(
@@ -604,4 +854,31 @@ void ControlPanelWindow::_updateSlidersFromGuiParams()
 
     _slider_params.at(_UIParamKeys::FILTER)
         .set_value(g_gui_params.Filter_Type.load());
+
+    _slider_params.at(_UIParamKeys::GAIN_LED)
+        .set_value(g_gui_LED_params.Gain.load());
+
+    _slider_params.at(_UIParamKeys::BLACK_LED)
+        .set_value(g_gui_LED_params.Black_Level.load());
+
+    _slider_params.at(_UIParamKeys::COLOR_LED)
+        .set_value(g_gui_LED_params.Color_Gain.load());
+
+    _slider_params.at(_UIParamKeys::HUE_LED)
+        .set_value(g_gui_LED_params.Color_Hue.load());
+
+    _slider_params.at(_UIParamKeys::GAMMA_LED)
+        .set_value(g_gui_LED_params.Image_Gamma.load());
+
+    _slider_params.at(_UIParamKeys::H_SHIFT_LED)
+        .set_value(g_gui_LED_params.H_Shift.load());
+
+    _slider_params.at(_UIParamKeys::RED_GAIN_LED)
+        .set_value(g_gui_LED_params.Red_Gain.load());
+
+    _slider_params.at(_UIParamKeys::GREEN_GAIN_LED)
+        .set_value(g_gui_LED_params.Green_Gain.load());
+
+    _slider_params.at(_UIParamKeys::BLUE_GAIN_LED)
+        .set_value(g_gui_LED_params.Blue_Gain.load());
 }

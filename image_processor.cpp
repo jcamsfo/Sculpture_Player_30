@@ -7,7 +7,7 @@
 
 
 // for downstream LED Correction
-void h_shift_float(const cv::Mat &src, cv::Mat &dst, int shift_px)
+void h_shift_float(const cv::Mat &src, cv::Mat &dst, int shift_degrees)
 {
   CV_Assert(src.type() == CV_32FC3);
   CV_Assert(!src.empty());
@@ -15,7 +15,9 @@ void h_shift_float(const cv::Mat &src, cv::Mat &dst, int shift_px)
   const int W = src.cols;
   const int H = src.rows;
 
-  int s = shift_px % W;
+  int shift_degrees_normalized = (int)( ( (float)shift_degrees / 360) * W );
+
+  int s = shift_degrees_normalized % W;
   if (s < 0)
     s += W;
 
@@ -230,12 +232,15 @@ void process_downstream_image_with_shift(const cv::Mat &src,
 
 
 
+// constructor
 // class version faster  (checked it...not much faster 200 usecs maybe)  for use in player class only
 Image_Processor::Image_Processor(int rows, int cols)
 {
   ShiftedTemp.create(rows, cols, CV_8UC3);
   Image_Processed_F.create(rows, cols, CV_32FC3);
 }
+
+
 
 // 8 bits in float out  for use in player class only
 // 8 bits in float out  for use in player class only

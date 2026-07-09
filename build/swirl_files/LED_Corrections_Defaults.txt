@@ -1,4 +1,4 @@
-# parameters for LEDs
+# default parameters for LEDs
 
 Gain            80
 Black_Level     0

@@ -6,6 +6,8 @@
 #include "image_processor.h"
 #include "fs_utils.h"
 #include "scheduler.h"
+#include "process_params.h"
+#include "file_io.h"
 
 #include <chrono>
 #include <thread>
@@ -15,7 +17,6 @@
 #include <sstream>
 #include <vector>
 #include <iomanip>
-#include "process_params.h"
 
 using Clock = std::chrono::steady_clock;
 
@@ -41,7 +42,12 @@ Sculpture::Sculpture(const std::string &filename, const std::string &tag, const 
 
     Mixer_Params = ProcessParams{};
 
-    Load_LED_Corrections("swirl_files/LED_Corrections.txt");
+    // Load_LED_Corrections_From_Text_File("swirl_files/LED_Corrections.txt");
+    Load_LED_Corrections_From_Text_File("swirl_files/LED_Corrections.txt", Mixer_Params);
+    copy_LED_params_to_gui();
+
+    Show_Grid = false;
+    Enable_White = true;
 
     Sculpture_Map = new int[SCULPTURE_MAPPED_SIZE_RGBW];
 
@@ -86,61 +92,34 @@ Sculpture::Sculpture(const std::string &filename, const std::string &tag, const 
     Program_Frame_Count = 0;
 }
 
-bool Sculpture::Force_Load_Movie_Now(const std::string &path)
+//**********************************************************************************************/
+//************************  MOVIE SELECTION FUNCTIONS  *****************************************/
+bool Sculpture::Load_Tonights_Video(bool Video_On_Time)
 {
-    VP[CURRENT].Open_Image_File_Mat(path, "main image");
-    VP[ON_DECK].Open_Image_File_Mat(path, "main image");
+    std::string path;
+
+    if (!Read_Tonights_Filename("swirl_files/Tonight.txt", path))
+        return false;
+
+    {
+        std::lock_guard<std::mutex> lock(g_tonights_movie_name_mutex);
+        g_tonights_movie_name = fs::path(path).filename().string();
+    }
+
+    g_tonights_movie_name_changed.store(true);
+
+    if (Video_On_Time)
+        Load_New_Movie(path);
+    else
+        Load_New_Movie("swirl_files/black.mov");
 
     return true;
 }
 
-bool Sculpture::Load_Params_From_Text_File(const std::string &filename, ProcessParams &params)
+bool Sculpture::Force_Load_Movie_Now(const std::string &path)
 {
-    std::ifstream in(filename);
-
-    if (!in)
-        return false;
-
-    // if (params.size() < NUM_PARAMS)
-    //     params.resize(NUM_PARAMS);
-
-    std::string line;
-
-    while (std::getline(in, line))
-    {
-        if (line.empty())
-            continue;
-
-        if (line[0] == '#')
-            continue;
-
-        std::istringstream iss(line);
-
-        std::string key;
-        int value;
-
-        if (!(iss >> key >> value))
-            continue;
-
-        if (key == "Gain")
-            params.Gain = value;
-        else if (key == "Black_Level")
-            params.Black_Level = value;
-        else if (key == "Image_Gamma")
-            params.Image_Gamma = value;
-        else if (key == "Color_Gain")
-            params.Color_Gain = value;
-        else if (key == "Color_Hue")
-            params.Color_Hue = value;
-        else if (key == "H_Shift")
-            params.H_Shift = value;
-        else if (key == "Rotate")
-            params.Rotate = value;
-        else if (key == "Speed")
-            params.Speed = value;
-        else if (key == "Filter")
-            params.Filter_Type = value;
-    }
+    VP[CURRENT].Open_Image_File_Mat(path, "main image");
+    VP[ON_DECK].Open_Image_File_Mat(path, "main image");
 
     return true;
 }
@@ -159,23 +138,20 @@ bool Sculpture::Load_New_Movie(string path)
 
     temp_found_file = Find_File(info_folder.string(), temp_path.Filename_No_Ext + ".txt");
 
+    // load default video corrections
     if (temp_found_file.empty())
     {
         fs::path new_file = info_folder / (temp_path.Filename_No_Ext + ".txt");
 
-        Create_Text_File_If_Missing(
+        Load_Gui_Params_From_Text_File(
+            "swirl_files/Image_Corrections_Defaults.txt",
+            VP[CURRENT].Player_Params);
+
+        copy_VIDEO_params_to_gui();
+
+        Save_Gui_Params_To_Text_File(
             new_file.string(),
-            "# parameters for video\n"
-            "\n"
-            "Gain            75\n"
-            "Black_Level     0\n"
-            "Image_Gamma     33\n"
-            "Color_Gain      100\n"
-            "Color_Hue       0\n"
-            "H_Shift         0\n"
-            "Rotate          0\n"
-            "Speed           100\n"
-            "Filter          3\n");
+            VP[CURRENT].Player_Params);
 
         temp_found_file = new_file.string();
     }
@@ -184,21 +160,131 @@ bool Sculpture::Load_New_Movie(string path)
 
     cout << "\nMOVIE INFO FILE: " << temp_found_file << endl;
 
-    // Load_Params_From_Text_File(temp_found_file,
-    //                            VP[ON_DECK].Player_Params);
+    Load_Gui_Params_From_Text_File(temp_found_file, VP[CURRENT].Player_Params);
+    copy_VIDEO_params_to_gui();
 
-    // g_gui_params.Gain.store(VP[ON_DECK].Player_Params[GAIN]);
-    // g_gui_params.Black_Level.store(VP[ON_DECK].Player_Params[BLACK_LEVEL]);
-    // g_gui_params.Color_Gain.store(VP[ON_DECK].Player_Params[COLOR_GAIN]);
-    // g_gui_params.Color_Hue.store(VP[ON_DECK].Player_Params[COLOR_HUE]);
-    // g_gui_params.Image_Gamma.store(VP[ON_DECK].Player_Params[IMAGE_GAMMA]);
-    // g_gui_params.H_Shift.store(VP[ON_DECK].Player_Params[H_SHIFT]);
-    // g_gui_params.Rotate.store(VP[ON_DECK].Player_Params[ROTATE]);
-    // g_gui_params.Speed.store(VP[ON_DECK].Player_Params[SPEED]);
-    // g_gui_params.Filter_Type.store(VP[ON_DECK].Player_Params[FILTER_TYPE]);
+    {
+        std::lock_guard<std::mutex> lock(g_current_movie_name_mutex);
+        g_current_movie_name = fs::path(path).filename().string();
+    }
 
-    Load_Params_From_Text_File(temp_found_file,
-                               VP[CURRENT].Player_Params);
+    g_current_movie_name_changed.store(true);
+
+    return true;
+}
+//************************  MOVIE SELECTION FUNCTIONS DONE  ************************************/
+//**********************************************************************************************/
+
+
+//**********************************************************************************************/
+//***************************  GUI SYNCING FUNCTIONS  ******************************************/
+void Sculpture::check_gui_buttons()
+{
+    // save params for the current image from the gui
+    if (g_gui_save_image_params.exchange(false))
+    {
+        if (!Current_Movie_Info_File.empty())
+        {
+            copy_VIDEO_params_from_gui();
+            Save_Gui_Params_To_Text_File(Current_Movie_Info_File, VP[CURRENT].Player_Params);
+            std::cout << "Saved image controls to "
+                      << Current_Movie_Info_File << std::endl;
+        }
+    }
+
+    if (g_gui_load_image_params.exchange(false))
+    {
+        if (!Current_Movie_Info_File.empty())
+        {
+            Load_Gui_Params_From_Text_File(Current_Movie_Info_File, VP[CURRENT].Player_Params);
+            copy_VIDEO_params_to_gui();
+            std::cout << "Loaded image controls from "
+                      << Current_Movie_Info_File << std::endl;
+        }
+    }
+
+    // save the name of the current image to be played tonight
+    if (g_gui_save_video_for_tonight.exchange(false))
+    {
+        if (Save_Tonights_Filename(
+                "swirl_files/Tonight.txt",
+                VP[CURRENT].Last_Good_Filename))
+        {
+            {
+                std::lock_guard<std::mutex> lock(g_tonights_movie_name_mutex);
+                g_tonights_movie_name =
+                    fs::path(VP[CURRENT].Last_Good_Filename)
+                        .filename()
+                        .string();
+            }
+
+            g_tonights_movie_name_changed.store(true);
+
+            std::cout << "Saved tonight's selection: "
+                      << VP[CURRENT].Last_Good_Filename
+                      << std::endl;
+        }
+    }
+
+    if (g_gui_reset_video_controls.exchange(false))
+    {
+        Load_Gui_Params_From_Text_File("swirl_files/Image_Corrections_Defaults.txt", VP[CURRENT].Player_Params);
+        copy_VIDEO_params_to_gui();
+
+        std::cout << "Loading Video Defaults" << std::endl;
+    }
+
+    if (g_gui_save_LED_params.exchange(false))
+    {
+        if (!Current_Movie_Info_File.empty())
+        {
+            copy_LED_params_from_gui();
+            Save_LED_Corrections_To_Text_File("swirl_files/LED_Corrections.txt", Mixer_Params);
+            std::cout << "Saved LED controls" << std::endl;
+        }
+    }
+
+    // save the name of the current image to be played tonight
+    if (g_gui_show_grid.exchange(false))
+    {
+        std::cout << "Showing Grid" << std::endl;
+        Show_Grid = !Show_Grid;
+    }
+
+    if (g_gui_enable_white_die.exchange(false))
+    {
+        std::cout << "Toggle White Die" << std::endl;
+        Enable_White = !Enable_White;
+    }
+
+    if (g_gui_reset_LED_corrections.exchange(false))
+    {
+        Load_LED_Corrections_From_Text_File("swirl_files/LED_Corrections_Defaults.txt", Mixer_Params);
+        copy_LED_params_to_gui();
+        std::cout << "Loading LED Defaults" << std::endl;
+    }
+
+    if (g_gui_pause.exchange(false))
+    {
+        VP[CURRENT].Control_Values.Pause_Toggle =
+            !VP[CURRENT].Control_Values.Pause_Toggle;
+    }
+
+    if (g_gui_fast_forward.exchange(false))
+    {
+        VP[CURRENT].Control_Values.Fast_Forward = true;
+    }
+
+    if (g_gui_rewind.exchange(false))
+    {
+        VP[CURRENT].Control_Values.Rewind = 1;
+    }
+
+    copy_LED_params_from_gui();
+}
+
+void Sculpture::copy_VIDEO_params_to_gui()
+{
 
     g_gui_params.Gain.store(VP[CURRENT].Player_Params.Gain);
     g_gui_params.Black_Level.store(VP[CURRENT].Player_Params.Black_Level);
@@ -211,152 +297,53 @@ bool Sculpture::Load_New_Movie(string path)
     g_gui_params.Filter_Type.store(VP[CURRENT].Player_Params.Filter_Type);
 
     g_gui_sliders_need_update.store(true);
-
-    {
-        std::lock_guard<std::mutex> lock(g_current_movie_name_mutex);
-        g_current_movie_name = fs::path(path).filename().string();
-    }
-
-    g_current_movie_name_changed.store(true);
-
-    return true;
 }
 
-bool Sculpture::Save_Gui_Params_To_Text_File(const std::string &filename)
+void Sculpture::copy_VIDEO_params_from_gui()
 {
-    std::ofstream out(filename);
-
-    if (!out)
-        return false;
-
-    out << "# parameters for video\n";
-    out << "\n";
-
-    out << "Gain            " << g_gui_params.Gain.load() << "\n";
-    out << "Black_Level     " << g_gui_params.Black_Level.load() << "\n";
-    out << "Image_Gamma     " << g_gui_params.Image_Gamma.load() << "\n";
-    out << "Color_Gain      " << g_gui_params.Color_Gain.load() << "\n";
-    out << "Color_Hue       " << g_gui_params.Color_Hue.load() << "\n";
-    out << "H_Shift         " << g_gui_params.H_Shift.load() << "\n";
-    out << "Rotate          " << g_gui_params.Rotate.load() << "\n";
-    out << "Speed           " << g_gui_params.Speed.load() << "\n";
-    out << "Filter          " << g_gui_params.Filter_Type.load() << "\n";
-
-    return true;
+    VP[CURRENT].Player_Params.Gain = g_gui_params.Gain.load();
+    VP[CURRENT].Player_Params.Black_Level = g_gui_params.Black_Level.load();
+    VP[CURRENT].Player_Params.Color_Gain = g_gui_params.Color_Gain.load();
+    VP[CURRENT].Player_Params.Color_Hue = g_gui_params.Color_Hue.load();
+    VP[CURRENT].Player_Params.Image_Gamma = g_gui_params.Image_Gamma.load();
+    VP[CURRENT].Player_Params.H_Shift = g_gui_params.H_Shift.load();
+    VP[CURRENT].Player_Params.Rotate = g_gui_params.Rotate.load();
+    VP[CURRENT].Player_Params.Speed = g_gui_params.Speed.load();
+    VP[CURRENT].Player_Params.Filter_Type = g_gui_params.Filter_Type.load();
 }
 
-bool Sculpture::Save_Video_For_Tonight()
+void Sculpture::copy_LED_params_from_gui()
 {
-    std::ofstream out("swirl_files/Tonight.txt");
+    Mixer_Params.Gain = g_gui_LED_params.Gain.load();
+    Mixer_Params.Black_Level = g_gui_LED_params.Black_Level.load();
+    Mixer_Params.Color_Gain = g_gui_LED_params.Color_Gain.load();
+    Mixer_Params.Color_Hue = g_gui_LED_params.Color_Hue.load();
+    Mixer_Params.Image_Gamma = g_gui_LED_params.Image_Gamma.load();
+    Mixer_Params.H_Shift = g_gui_LED_params.H_Shift.load();
 
-    if (!out)
-        return false;
-
-    out << VP[CURRENT].Last_Good_Filename << '\n';
-
-    {
-        std::lock_guard<std::mutex> lock(g_tonights_movie_name_mutex);
-        g_tonights_movie_name =
-            fs::path(VP[CURRENT].Last_Good_Filename)
-                .filename()
-                .string();
-    }
-
-    g_tonights_movie_name_changed.store(true);
-
-    std::cout << "Saved tonight video: "
-              << VP[CURRENT].Last_Good_Filename
-              << "\nTo file: "
-              << fs::absolute("Tonight.txt")
-              << std::endl;
-
-    return true;
+    Mixer_Params.Red_Gain = g_gui_LED_params.Red_Gain.load();
+    Mixer_Params.Green_Gain = g_gui_LED_params.Green_Gain.load();
+    Mixer_Params.Blue_Gain = g_gui_LED_params.Blue_Gain.load();
 }
 
-bool Sculpture::Read_Video_For_Tonight(bool Video_On_Time)
+void Sculpture::copy_LED_params_to_gui()
 {
-    std::ifstream in("swirl_files/Tonight.txt");
+    g_gui_LED_params.Gain.store(Mixer_Params.Gain);
+    g_gui_LED_params.Black_Level.store(Mixer_Params.Black_Level);
+    g_gui_LED_params.Color_Gain.store(Mixer_Params.Color_Gain);
+    g_gui_LED_params.Color_Hue.store(Mixer_Params.Color_Hue);
+    g_gui_LED_params.Image_Gamma.store(Mixer_Params.Image_Gamma);
+    g_gui_LED_params.H_Shift.store(Mixer_Params.H_Shift);
 
-    if (!in)
-        return false;
+    g_gui_LED_params.Red_Gain.store(Mixer_Params.Red_Gain);
+    g_gui_LED_params.Green_Gain.store(Mixer_Params.Green_Gain);
+    g_gui_LED_params.Blue_Gain.store(Mixer_Params.Blue_Gain);
 
-    std::string path;
-    std::getline(in, path);
-
-    if (path.empty())
-        return false;
-
-    {
-        std::lock_guard<std::mutex> lock(g_tonights_movie_name_mutex);
-        g_tonights_movie_name =
-            fs::path(path).filename().string();
-    }
-
-    g_tonights_movie_name_changed.store(true);
-
-    if (Video_On_Time)
-        Load_New_Movie(path);
-    else
-        Load_New_Movie("swirl_files/black.mov");
-
-    return true;
+    g_gui_sliders_need_update.store(true);
 }
+//***************************  GUI SYNCING FUNCTIONS DONE **************************************/
+//**********************************************************************************************/
 
-bool Sculpture::Load_LED_Corrections(const std::string &filename)
-{
-    std::ifstream in(filename);
-
-    if (!in)
-        return false;
-
-    std::string line;
-
-    while (std::getline(in, line))
-    {
-        if (line.empty())
-            continue;
-
-        if (line[0] == '#')
-            continue;
-
-        std::istringstream iss(line);
-
-        std::string key;
-        int value;
-
-        if (!(iss >> key >> value))
-            continue;
-
-        if (key == "Gain")
-            Mixer_Params.Gain = value;
-
-        else if (key == "Black_Level")
-            Mixer_Params.Black_Level= value;
-
-        else if (key == "Image_Gamma")
-            Mixer_Params.Image_Gamma = value;
-
-        else if (key == "Color_Gain")
-            Mixer_Params.Color_Gain = value;
-
-        else if (key == "Color_Hue")
-            Mixer_Params.Color_Hue = value;
-
-        else if (key == "H_Shift")
-            Mixer_Params.H_Shift = value;
-
-        else if (key == "Rotate")
-            Mixer_Params.Rotate = value;
-
-        else if (key == "Speed")
-            Mixer_Params.Speed = value;
-
-        else if (key == "Filter")
-            Mixer_Params.Filter_Type = value;
-    }
-
-    return true;
-}
 
 // void Sculpture::Release_Working_Mats()
 // {
@@ -366,29 +353,11 @@ bool Sculpture::Load_LED_Corrections(const std::string &filename)
 //     Downstream_Display_M.release();
 // }
 
-bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
+bool Sculpture::check_schedule()
 {
-    bool start_fade = false;
+    bool start_fade_local = false;
     static bool Video_On_Time = false;
     static bool Video_On_Time_Delayed = false;
-    static long long process_swap_delta_stored = 0;
-
-    // check for new video dropped
-    if (g_new_drop_path.exchange(false))
-    {
-        std::string path;
-
-        {
-            std::lock_guard<std::mutex> lock(g_drop_path_mutex);
-            path = g_drop_path;
-        }
-        Load_New_Movie(path);
-
-        cout << "Loaded " << path << endl;
-        start_fade = true;
-    }
-
-    /************************************* SCHEDULING RELATED  *********************************************/
 
     // compare current time to turn on time
     Video_On_Time = Schedule.Get_Video_On_Time();
@@ -420,90 +389,67 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     // Load tonights video or black depending on current time
     if (Program_Start_Up)
     {
-        Read_Video_For_Tonight(Video_On_Time);
-        start_fade = true;
+        Load_Tonights_Video(Video_On_Time);
+        start_fade_local = true;
         Program_Start_Up = false;
     }
 
     // check for Turn On Time
     if (Video_On_Time && !Video_On_Time_Delayed)
     {
-        Read_Video_For_Tonight(true);
-        start_fade = true;
+        Load_Tonights_Video(true);
+        start_fade_local = true;
     }
     // check for Turn Off Time
     else if (!Video_On_Time && Video_On_Time_Delayed)
     {
-        Read_Video_For_Tonight(false);
-        start_fade = true;
+        Load_Tonights_Video(false);
+        start_fade_local = true;
     }
     Video_On_Time_Delayed = Video_On_Time;
 
-    /************************************* SCHEDULING RELATED  DONE ****************************************/
+    return start_fade_local;
+}
 
-    /************************************* GUI BUTTONS    **************************************************/
 
-    // save params for the current image from the gui
-    if (g_gui_save_image_params.exchange(false))
+
+//**********************************************************************************************/
+//***********************************  MAIN VIDEO LOOP *****************************************/
+bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
+{
+    bool start_fade = false;
+    static long long process_swap_delta_stored = 0;
+
+    // check for new video dropped
+    if (g_new_drop_path.exchange(false))
     {
-        if (!Current_Movie_Info_File.empty())
+        std::string path;
+
         {
-            Save_Gui_Params_To_Text_File(Current_Movie_Info_File);
-            std::cout << "Saved image controls to "
-                      << Current_Movie_Info_File << std::endl;
+            std::lock_guard<std::mutex> lock(g_drop_path_mutex);
+            path = g_drop_path;
         }
+        Load_New_Movie(path);
+
+        cout << "Loaded " << path << endl;
+        start_fade = true;
     }
 
-    // save the name of the current image to be played tonight
-    if (g_gui_save_video_for_tonight.exchange(false))
-    {
-        Save_Video_For_Tonight();
-        std::cout << "Saved tonight's selection"
-                  << Current_Movie_Info_File << std::endl;
-    }
 
-    if (g_gui_pause.exchange(false))
-    {
-        VP[CURRENT].Player_Params.Pause_Toggle =
-            !VP[CURRENT].Player_Params.Pause_Toggle;
-    }
+    if (check_schedule())
+        start_fade = true;
 
-    if (g_gui_fast_forward.exchange(false))
-    {
-        VP[CURRENT].Player_Params.Fast_Forward = true;
-    }
+    check_gui_buttons();
 
-    if (g_gui_rewind.exchange(false))
-    {
-        VP[CURRENT].Player_Params.Rewind = 1;
-    }
-
-    /************************************* GUI BUTTONS DONE  ***********************************************/
 
     process_start_ = Clock::now();
 
     // start the fading process
     if (start_fade) // SWAP so that it's always fading in the same direction  less confusing
     {
-        // VP[SWAP] = VP[CURRENT];
-        // VP[CURRENT] = VP[ON_DECK];
-        // VP[ON_DECK] = VP[SWAP];
-
         std::swap(VP[CURRENT], VP[ON_DECK]);
         process_swap_delta_stored = GetDeltaTime(process_start_);
     }
-
-    // LEAK TESTING
-    /******************************  IMAGE PROCESS BOTH IMAGES **************************/
-    // VP[CURRENT].Process_New_Frame_Ext_Process();
-    // VP[ON_DECK].Process_New_Frame_Ext_Process();
-    // thread the 2 players
-    // std::jthread t1([&]
-    //                 { VP[CURRENT].Process_New_Frame_Ext_Process(); });
-    // std::jthread t2([&]
-    //                 { VP[ON_DECK].Process_New_Frame_Ext_Process(); });
-    // t1.join();
-    // t2.join(); // ⬅️ ensure both finished
 
     VP[CURRENT].Process_New_Frame_Ext_Process();
 
@@ -545,14 +491,15 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
 
     Map_Data_To_Sculpture(Sampled_Buffer_RGB, Sculpture_Data_Mapped);
 
-    Show_Map_On_Display(Main_Display_M);
+    if (Show_Grid)
+        Show_Map_On_Display(Main_Display_M);
 
     auto after_sho_map = GetDeltaTime(process_start_);
 
     Unique_DesMoines_Post_Mapped_Process(
         Sculpture_Data_Mapped,        // uint16_t *Input_Sampled_Mapped,
         Sculpture_Data_Mapped_Params, // uint16_t *Output_With_Params,
-        true,                         // bool Enable_White_Inside,
+        Enable_White,                 // bool Enable_White_Inside,
         true,                         // bool Enable_Outside_Pixels,
         8,                            // uint8_t White_Die_Gain,
         3,                            // uint8_t Outside_Pixel_Gain,
@@ -565,7 +512,10 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         0,                            // uint8_t Green_Correct,
         0,                            // uint8_t Blue_Correct,
         1,                            // uint8_t Control_Bits,
-        0                             // uint8_t Control_Bits_2
+        0,                            // uint8_t Control_Bits_2,
+        Mixer_Params.Red_Gain,        // uint8_t Red_Gain_LED
+        Mixer_Params.Green_Gain,      // uint8_t Green_Gain_LED
+        Mixer_Params.Blue_Gain        // uint8_t Blue_Gain_LED
     );
 
     //  for testing to match old proigram
@@ -618,6 +568,11 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
     loop_counter++;
     return true;
 }
+//***********************************  MAIN VIDEO LOOP DONE ************************************/
+//**********************************************************************************************/
+
+
+
 
 void Sculpture::Fade_To_A(const cv::Mat &A, const cv::Mat &B, cv::Mat &dst, float fade_length_sec, bool &fade_done, bool &start_fade_local)
 {
@@ -780,25 +735,6 @@ void Sculpture::Generate_Sample_Point_Map()
     }
 }
 
-void Sculpture::Write_Buffer_To_File_For_Test(const std::string &filename,
-                                              const void *data,
-                                              size_t element_size,
-                                              size_t element_count)
-{
-    FILE *f = fopen(filename.c_str(), "wb");
-    if (!f)
-    {
-        printf("Failed to open %s\n", filename.c_str());
-        return;
-    }
-
-    size_t written = fwrite(data, element_size, element_count, f);
-    fclose(f);
-
-    printf("Wrote %zu elements (%zu bytes each) to %s\n",
-           written, element_size, filename.c_str());
-}
-
 void Sculpture::Unique_DesMoines_Post_Mapped_Process(
     uint16_t *Input_Sampled_Mapped,
     uint16_t *Output_With_Params,
@@ -815,7 +751,10 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
     uint8_t Green_Correct,
     uint8_t Blue_Correct,
     uint8_t Control_Bits,
-    uint8_t Control_Bits_2)
+    uint8_t Control_Bits_2,
+    uint8_t Red_Gain_LED,
+    uint8_t Green_Gain_LED,
+    uint8_t Blue_Gain_LED)
 
 {
 
@@ -853,8 +792,8 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
                     Temp_Outside_Pixel = (30 * R + 55 * G + 15 * B) / 100;
                     if (Enable_White_Inside)
                     {
-                        X = (R <= G) ? R : G;
-                        X = (B <= X) ? B : X;
+                        X = (R < G) ? R : G;
+                        X = (B < X) ? B : X;
                         X = (X * White_Die_Gain) / 8;
                         if (X >= 65535)
                             X = 65535;
@@ -862,9 +801,17 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
                     else
                         X = 0;
 
-                    *(Output_With_Params + iipointer_B) = static_cast<unsigned short>(B - X);
-                    *(Output_With_Params + iipointer_G) = static_cast<unsigned short>(G - X);
-                    *(Output_With_Params + iipointer_R) = static_cast<unsigned short>(R - X);
+                    R = ((R - X) * Red_Gain_LED) / 100;
+                    G = ((G - X) * Green_Gain_LED) / 100;
+                    B = ((B - X) * Blue_Gain_LED) / 100;
+
+                    R = std::clamp(R, 0, 65535);
+                    G = std::clamp(G, 0, 65535);
+                    B = std::clamp(B, 0, 65535);
+
+                    *(Output_With_Params + iipointer_B) = static_cast<unsigned short>(B);
+                    *(Output_With_Params + iipointer_G) = static_cast<unsigned short>(G);
+                    *(Output_With_Params + iipointer_R) = static_cast<unsigned short>(R);
                     *(Output_With_Params + iipointer) = static_cast<unsigned short>(X);
                 }
                 else if (RGBWX_cnt == 4)
@@ -891,4 +838,23 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
         *(Output_With_Params + New_Parameters_Start + Parameters_Offset + 4) = Blue_Correct + 256 * Control_Bits;
         *(Output_With_Params + New_Parameters_Start + Parameters_Offset + 5) = Control_Bits_2;
     }
+}
+
+void Sculpture::Write_Buffer_To_File_For_Test(const std::string &filename,
+                                              const void *data,
+                                              size_t element_size,
+                                              size_t element_count)
+{
+    FILE *f = fopen(filename.c_str(), "wb");
+    if (!f)
+    {
+        printf("Failed to open %s\n", filename.c_str());
+        return;
+    }
+
+    size_t written = fwrite(data, element_size, element_count, f);
+    fclose(f);
+
+    printf("Wrote %zu elements (%zu bytes each) to %s\n",
+           written, element_size, filename.c_str());
 }

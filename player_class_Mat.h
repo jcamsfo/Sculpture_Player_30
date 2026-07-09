@@ -58,10 +58,6 @@ public:
 
   void Close_Image_File(void);
 
-  // void Change_Param(const int &Param_Index, const std::string Value);
-  // void Change_Param(const int &Param_Index, const int Value);
-  // void Change_All_Params(std::vector<int> Value);
-
   void H_Shift_Rotate(const cv::Mat &ImageIn_U,
                       cv::Mat &ImageOut_U,
                       double Location_px,
@@ -78,6 +74,8 @@ public:
   // vector<int> Player_Params;
 
   ProcessParams Player_Params;
+
+  ControlValues Control_Values;
 
   string display_name;
 

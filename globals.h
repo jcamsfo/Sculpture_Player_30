@@ -9,7 +9,9 @@ extern long long Prog_Frame_Counter;
 
 inline std::atomic<bool> g_running = true;
 
-struct GuiParamsAtomic
+
+// processing params
+struct ParamsAtomic
 {
     std::atomic<int> Gain{75};
     std::atomic<int> Black_Level{0};
@@ -20,9 +22,17 @@ struct GuiParamsAtomic
     std::atomic<int> Rotate{0};
     std::atomic<int> Speed{100};
     std::atomic<int> Filter_Type{3};
+
+    std::atomic<int> Red_Gain{100};
+    std::atomic<int> Green_Gain{100};
+    std::atomic<int> Blue_Gain{100};
 };
 
-inline GuiParamsAtomic g_gui_params;
+
+inline ParamsAtomic g_gui_params;
+
+inline ParamsAtomic g_gui_LED_params;  // downstream LED
+
 
 
 
@@ -45,15 +55,22 @@ inline std::atomic<bool> g_new_drop_path{false};
 
 inline std::atomic<bool> g_gui_sliders_need_update{false};
 
-inline std::atomic<bool> g_gui_save_image_params{false};
 
+inline std::atomic<bool> g_gui_save_image_params{false};
+inline std::atomic<bool> g_gui_load_image_params{false};
 inline std::atomic<bool> g_gui_save_video_for_tonight{false};
+inline std::atomic<bool> g_gui_reset_video_controls{false};
+
+
+inline std::atomic<bool> g_gui_save_LED_params{false};
+inline std::atomic<bool> g_gui_show_grid{false};
+inline std::atomic<bool> g_gui_enable_white_die{false};
+inline std::atomic<bool> g_gui_reset_LED_corrections{false};
 
 
 inline std::atomic<bool> g_gui_pause{false};
 inline std::atomic<bool> g_gui_fast_forward{false};
 inline std::atomic<bool> g_gui_rewind{false};
-
 
 
 inline std::mutex g_current_movie_name_mutex;

@@ -26,20 +26,31 @@ private:
   void Generate_Sample_Point_Map(void);
 
 public:
-  Sculpture();
-  // Sculpture(const std::string &filename, const std::string &tag);
   Sculpture(const std::string &filename, const std::string &tag, const std::string &filename2, const std::string &tag2);
 
   Scheduler Schedule;
 
   uint16_t *Sculpture_Data_Mapped_Params = nullptr;
 
-  bool Load_Params_From_Text_File(const std::string &filename, ProcessParams &params);
+  void check_gui_buttons();
+  void copy_LED_params_from_gui();
+  void copy_LED_params_to_gui();
+  void copy_VIDEO_params_to_gui();
+  void copy_VIDEO_params_from_gui();
+  bool check_schedule();
+
+  // bool Load_Gui_Params_From_Text_File(const std::string &filename, ProcessParams &params);
+  // bool Save_Gui_Params_To_Text_File(const std::string &filename);
+
+  // bool Load_LED_Corrections_From_Text_File(const std::string &filename);
+  // bool Save_LED_Corrections_To_Text_File(const std::string &filename);
+
+  // bool Save_Video_For_Tonight();
+  // bool Read_Video_For_Tonight(bool Video_On_Time);
+
+  bool Load_Tonights_Video(bool Video_On_Time);
+
   bool Load_New_Movie(string path);
-  bool Save_Gui_Params_To_Text_File(const std::string &filename);
-  bool Save_Video_For_Tonight();
-  bool Read_Video_For_Tonight(bool Video_On_Time);
-  bool Load_LED_Corrections(const std::string &filename);
   bool Force_Load_Movie_Now(const std::string &path);
 
   //*******************************  ON OFF SUNSET RELATED   ******************************************/
@@ -119,7 +130,10 @@ public:
       uint8_t Green_Correct,
       uint8_t Blue_Correct,
       uint8_t Control_Bits,
-      uint8_t Control_Bits_2);
+      uint8_t Control_Bits_2,
+      uint8_t Red_Gain_LED,
+      uint8_t Green_Gain_LED,
+      uint8_t Blue_Gain_LED);
 
   bool Write_File;
 
@@ -144,16 +158,17 @@ public:
   std::string Current_Movie_Info_File;
 
 private:
-
   Mat Cross_Faded_F;
   Mat Main_Display_M;
   Mat Down_Stream_Corrected_F;
   Mat Downstream_Display_M;
+
+  bool Show_Grid;
+  bool Enable_White;
 
   void Release_Working_Mats();
 
   float fade_level_ = 1.0f; // 0 = fully B, 1 = fully A
 
   vector<vector<int>> Sample_Points_Map;
-
 };

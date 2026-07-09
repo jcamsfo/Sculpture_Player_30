@@ -51,6 +51,52 @@ constexpr int STAGGER_TYPE = TOP_ROW_LEFT;
 
 
 
+enum Player_Param_Index
+{
+    GAIN = 0,
+    BLACK_LEVEL,
+    COLOR_GAIN,
+    COLOR_HUE,
+    IMAGE_GAMMA,
+    H_SHIFT,
+    ROTATE,
+    SPEED,
+    FILTER_TYPE,
+
+    RED_GAIN,
+    GREEN_GAIN,
+    BLUE_GAIN
+};
+
+struct ParamLimit
+{
+    int Default;
+    int Min;
+    int Max;
+};
+
+// note defaults not used  loaded from file
+inline constexpr ParamLimit Process_Default_Limits[] =
+{
+    {0, 0, 130},
+    {0, -100, 100},
+    {0, 0, 200},
+    {0, -180, 180},
+    {0, 0, 100},
+    {0, 0, 360},
+    {0, -100, 100},
+    {0, 0, 300},
+    {0, 0, 10},
+
+    {0, 0, 130},
+    {0, 0, 130},
+    {0, 0, 130}
+};
+
+
+
+
+
 
 
 
