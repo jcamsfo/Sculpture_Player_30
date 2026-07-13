@@ -29,6 +29,7 @@ private:
     Gtk::Button _pause_button;
     Gtk::Button _ff_button;
     Gtk::Button _rewind_button;
+    Gtk::Button _quit_button;
 
     Gtk::Button _save_LED_button;
     Gtk::Button _show_grid_button;
@@ -106,7 +107,9 @@ private:
     void
     _onBlueGainLEDValueChanged();
     
-    
+       void
+    _onWhiteGainLEDValueChanged();
+
 
     std::string
     _sliderParamsToMockJSON();
@@ -132,6 +135,9 @@ private:
     void _onPauseClicked();
     void _onFastForwardClicked();
     void _onRewindClicked();
+    void _onQuitAllClicked();    
+
+    
 
     void _onSaveLEDControlsClicked();
     void _onShowGridClicked();
@@ -188,6 +194,7 @@ private:
         static constexpr std::string_view RED_GAIN_LED{"RED"};
         static constexpr std::string_view GREEN_GAIN_LED{"GREEN"};
         static constexpr std::string_view BLUE_GAIN_LED{"BLUE"};
+        static constexpr std::string_view WHITE_GAIN_LED{"WHITE"};        
 
     };
 
@@ -318,7 +325,15 @@ inline static const std::vector<_SliderTraits> _SLIDER_TRAITS{
      Process_Default_Limits[BLUE_GAIN].Max,
      1,
      Process_Default_Limits[BLUE_GAIN].Default,
-     &ControlPanelWindow::_onBlueGainLEDValueChanged}
+     &ControlPanelWindow::_onBlueGainLEDValueChanged},
+
+    {_UIParamKeys::WHITE_GAIN_LED,
+     Process_Default_Limits[WHITE_GAIN].Min,
+     Process_Default_Limits[WHITE_GAIN].Max,
+     1,
+     Process_Default_Limits[WHITE_GAIN].Default,
+     &ControlPanelWindow::_onWhiteGainLEDValueChanged}
+
 };
 
 

@@ -26,6 +26,7 @@ struct ParamsAtomic
     std::atomic<int> Red_Gain{100};
     std::atomic<int> Green_Gain{100};
     std::atomic<int> Blue_Gain{100};
+    std::atomic<int> White_Gain{100};    
 };
 
 
@@ -52,6 +53,8 @@ inline std::mutex g_drop_path_mutex;
 inline std::string g_drop_path;
 inline std::atomic<bool> g_new_drop_path{false};
 
+inline std::atomic<bool> g_quit_requested = false;
+
 
 inline std::atomic<bool> g_gui_sliders_need_update{false};
 
@@ -71,6 +74,7 @@ inline std::atomic<bool> g_gui_reset_LED_corrections{false};
 inline std::atomic<bool> g_gui_pause{false};
 inline std::atomic<bool> g_gui_fast_forward{false};
 inline std::atomic<bool> g_gui_rewind{false};
+inline std::atomic<bool> g_gui_quit_all{false};
 
 
 inline std::mutex g_current_movie_name_mutex;

@@ -19,6 +19,7 @@ struct ProcessParams
   int Red_Gain = Process_Default_Limits[RED_GAIN].Default;
   int Green_Gain = Process_Default_Limits[GREEN_GAIN].Default;
   int Blue_Gain = Process_Default_Limits[BLUE_GAIN].Default;
+  int White_Gain = Process_Default_Limits[WHITE_GAIN].Default;  
 };
 
 

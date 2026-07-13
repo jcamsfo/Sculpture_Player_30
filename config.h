@@ -65,7 +65,8 @@ enum Player_Param_Index
 
     RED_GAIN,
     GREEN_GAIN,
-    BLUE_GAIN
+    BLUE_GAIN,
+    WHITE_GAIN
 };
 
 struct ParamLimit
@@ -88,9 +89,10 @@ inline constexpr ParamLimit Process_Default_Limits[] =
     {0, 0, 300},
     {0, 0, 10},
 
-    {0, 0, 130},
-    {0, 0, 130},
-    {0, 0, 130}
+    {0, 0, 100},
+    {0, 0, 100},
+    {0, 0, 100},
+    {0, 0, 100}    
 };
 
 

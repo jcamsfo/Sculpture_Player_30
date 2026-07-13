@@ -179,6 +179,12 @@ bool Sculpture::Load_New_Movie(string path)
 //***************************  GUI SYNCING FUNCTIONS  ******************************************/
 void Sculpture::check_gui_buttons()
 {
+    if (g_gui_quit_all.exchange(false))
+    {
+          g_quit_requested = true;
+    }
+
+
     // save params for the current image from the gui
     if (g_gui_save_image_params.exchange(false))
     {
@@ -322,6 +328,7 @@ void Sculpture::copy_LED_params_from_gui()
     Mixer_Params.Red_Gain = g_gui_LED_params.Red_Gain.load();
     Mixer_Params.Green_Gain = g_gui_LED_params.Green_Gain.load();
     Mixer_Params.Blue_Gain = g_gui_LED_params.Blue_Gain.load();
+    Mixer_Params.White_Gain = g_gui_LED_params.White_Gain.load();    
 }
 
 void Sculpture::copy_LED_params_to_gui()
@@ -336,6 +343,9 @@ void Sculpture::copy_LED_params_to_gui()
     g_gui_LED_params.Red_Gain.store(Mixer_Params.Red_Gain);
     g_gui_LED_params.Green_Gain.store(Mixer_Params.Green_Gain);
     g_gui_LED_params.Blue_Gain.store(Mixer_Params.Blue_Gain);
+    g_gui_LED_params.White_Gain.store(Mixer_Params.White_Gain);    
+
+    cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx "  << g_gui_LED_params.Blue_Gain << "  "  <<  g_gui_LED_params.White_Gain <<  endl ;
 
     g_gui_sliders_need_update.store(true);
 }
@@ -518,7 +528,8 @@ bool Sculpture::Advance(std::array<cv::Mat, 4> &outputs)
         0,                            // uint8_t Control_Bits_2,
         Mixer_Params.Red_Gain,        // uint8_t Red_Gain_LED
         Mixer_Params.Green_Gain,      // uint8_t Green_Gain_LED
-        Mixer_Params.Blue_Gain        // uint8_t Blue_Gain_LED
+        Mixer_Params.Blue_Gain,        // uint8_t Blue_Gain_LED
+        Mixer_Params.White_Gain   
     );
 
     //  for testing to match old proigram
@@ -754,7 +765,8 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
     uint8_t Control_Bits_2,
     uint8_t Red_Gain_LED,
     uint8_t Green_Gain_LED,
-    uint8_t Blue_Gain_LED)
+    uint8_t Blue_Gain_LED,
+    uint8_t White_Gain_LED)
 
 {
 
@@ -789,14 +801,14 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
                     B = (int)*(Input_Sampled_Mapped + iipointer);
                 else if (RGBWX_cnt == 3)
                 {
-                    Temp_Outside_Pixel = (30 * R + 55 * G + 15 * B) / 100;
+                    Temp_Outside_Pixel = (30 * R + 55 * G + 15 * B) / 100;             
                     if (Enable_White_Inside)
                     {
                         X = (R < G) ? R : G;
                         X = (B < X) ? B : X;
-                        X = (X * White_Die_Gain) / 8;
-                        if (X >= 65535)
-                            X = 65535;
+                        // X = (X * White_Die_Gain) / 8;
+                        // if (X >= 65535)
+                        //     X = 65535;
                     }
                     else
                         X = 0;
@@ -804,10 +816,12 @@ void Sculpture::Unique_DesMoines_Post_Mapped_Process(
                     R = ((R - X) * Red_Gain_LED) / 100;
                     G = ((G - X) * Green_Gain_LED) / 100;
                     B = ((B - X) * Blue_Gain_LED) / 100;
+                    X = X * White_Gain_LED / 100;
 
                     R = std::clamp(R, 0, 65535);
                     G = std::clamp(G, 0, 65535);
                     B = std::clamp(B, 0, 65535);
+                    X = std::clamp(X, 0, 65535);                    
 
                     *(Output_With_Params + iipointer_B) = static_cast<unsigned short>(B);
                     *(Output_With_Params + iipointer_G) = static_cast<unsigned short>(G);

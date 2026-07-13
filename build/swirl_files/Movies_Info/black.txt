@@ -1,11 +1,11 @@
 # parameters for video
 
-Gain            75
+Gain            100
 Black_Level     0
-Image_Gamma     33
+Image_Gamma     0
 Color_Gain      100
 Color_Hue       0
 H_Shift         0
 Rotate          0
 Speed           100
-Filter          3
+Filter          0

@@ -44,6 +44,8 @@ bool Load_LED_Corrections_From_Text_File(const std::string &filename, ProcessPar
             params.Green_Gain = value;
         else if (key == "Blue_Gain")
             params.Blue_Gain = value;
+        else if (key == "White_Gain")
+            params.White_Gain = value;            
     }
 
     return true;
@@ -69,6 +71,7 @@ bool Save_LED_Corrections_To_Text_File(const std::string &filename, const Proces
     out << "Red_Gain        " << params.Red_Gain << "\n";
     out << "Green_Gain      " << params.Green_Gain << "\n";
     out << "Blue_Gain       " << params.Blue_Gain << "\n";
+    out << "White_Gain      " << params.White_Gain << "\n";    
 
     return true;
 }

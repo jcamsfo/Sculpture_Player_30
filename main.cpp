@@ -36,6 +36,7 @@ int video_processor_main(void)
 
     static Prog_Durations Timing_All;
 
+    int Quit_Count = -1;
 
     char *RxBuffer = nullptr;
     RxBuffer = new char[8192]; // dummy buffer for receiving sync from hardware
@@ -108,8 +109,6 @@ int video_processor_main(void)
             missed_sync_count = 0;
         }
 
-
-
         if (FT_Read_GTEQ_64) // normally 60fps
         {
             short_frame_delta = GetDeltaTime(short_frame_start);
@@ -179,10 +178,8 @@ int video_processor_main(void)
 
             sdl_show_start = Clock::now();
             if (!Update_And_Show_Main_Displays_sdl2_2(Main_Display))
-            {
-                g_running = false;
-                break;
-            }
+                Quit_Count = 0;
+
             sdl_show_delta = GetDeltaTime(sdl_show_start);
 
             Main_Done = true;
@@ -203,28 +200,27 @@ int video_processor_main(void)
             // display at 60fps even though video is updated at 30fps ?
             sdl_show_del_loop_start = Clock::now();
             if (!Update_And_Show_Main_Displays_sdl2_2(Main_Display))
-            {
-                g_running = false;
-                break;
-            }
+                Quit_Count = 0;
+
             sdl_show_del_loop_delta = GetDeltaTime(sdl_show_del_loop_start);
 
             Start_Delay = false;
         }
+
+        if (g_quit_requested && Quit_Count < 0)
+            Quit_Count = 0;
+
+        if (Quit_Count == 0)
+            SC.Force_Load_Movie_Now("swirl_files/black.mov");
+
+        if (Quit_Count >= 0)
+            Quit_Count++;
+
+        if (Quit_Count >= 8)
+            break;
     }
 
-    // shut down black video
-    SC.Force_Load_Movie_Now("swirl_files/black.mov");
-    for (int i = 0; i < 5; i++)
-    {
-        SC.Advance(Main_Display);
-
-        if (g_ftdi_connected) // FIXED OLD FTDI LOCKUP
-            FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
-        // FTDI_Write_Buffer(ftHandle, SC.Sculpture_Data_Mapped_Params, SCULPTURE_SEND_SIZE_RGBW_BYTES);
-
-        Delay_Msec(17);
-    }
+    g_running = false;
 
     // Signal GTK to quit from its own thread safely
     Glib::signal_idle().connect_once([]()
@@ -236,12 +232,11 @@ int video_processor_main(void)
     return 0;
 }
 
-
 int main(int argc, char *argv[])
 {
     std::thread ftdi_thread(FTDI_Thread);
 
-    Delay_Msec(300);   // give FTDI time to open before video starts
+    Delay_Msec(300); // give FTDI time to open before video starts
 
     std::thread video_thread(video_processor_main);
 
@@ -249,11 +244,13 @@ int main(int argc, char *argv[])
 
     int result = app->make_window_and_run<ControlPanelWindow>(argc, argv);
 
-    g_running = false;
+    g_quit_requested = true;
 
+    // wait for video thread to send black
     if (video_thread.joinable())
         video_thread.join();
 
+    // now stop FTDI thread
     if (ftdi_thread.joinable())
         ftdi_thread.join();
 

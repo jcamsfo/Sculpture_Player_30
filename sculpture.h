@@ -125,7 +125,8 @@ public:
       uint8_t Control_Bits_2,
       uint8_t Red_Gain_LED,
       uint8_t Green_Gain_LED,
-      uint8_t Blue_Gain_LED);
+      uint8_t Blue_Gain_LED,
+      uint8_t White_Gain_LED);
 
   bool Write_File;
 

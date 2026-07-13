@@ -159,6 +159,12 @@ void ControlPanelWindow::_onBlueGainLEDValueChanged()
     g_gui_LED_params.Blue_Gain.store(_slider_params.at(_UIParamKeys::BLUE_GAIN_LED).get_value());
 }
 
+void ControlPanelWindow::_onWhiteGainLEDValueChanged()
+{
+    g_gui_LED_params.White_Gain.store(_slider_params.at(_UIParamKeys::WHITE_GAIN_LED).get_value());
+}
+
+
 std::string ControlPanelWindow::_sliderParamsToMockJSON()
 {
     std::string mock_json;
@@ -209,6 +215,11 @@ void ControlPanelWindow::_onFastForwardClicked()
 void ControlPanelWindow::_onRewindClicked()
 {
     g_gui_rewind.store(true);
+}
+
+void ControlPanelWindow::_onQuitAllClicked()
+{
+    g_gui_quit_all.store(true);
 }
 
 void ControlPanelWindow::_onSaveLEDControlsClicked()
@@ -288,7 +299,8 @@ ControlPanelWindow::ControlPanelWindow()
                name == _UIParamKeys::H_SHIFT_LED ||
                name == _UIParamKeys::RED_GAIN_LED ||
                name == _UIParamKeys::GREEN_GAIN_LED ||
-               name == _UIParamKeys::BLUE_GAIN_LED;
+               name == _UIParamKeys::BLUE_GAIN_LED ||
+               name == _UIParamKeys::WHITE_GAIN_LED;
     };
 
     for (const _SliderTraits &traits : _SLIDER_TRAITS)
@@ -392,6 +404,15 @@ ControlPanelWindow::ControlPanelWindow()
         sigc::mem_fun(*this, &ControlPanelWindow::_onFastForwardClicked));
     transport_box.append(_ff_button);
 
+
+    _quit_button.set_label("  Quit Application  ");
+    _quit_button.set_name("btn_quit");
+    _quit_button.set_margin_start(30);
+    _quit_button.signal_clicked().connect(
+        sigc::mem_fun(*this, &ControlPanelWindow::_onQuitAllClicked));
+    transport_box.append(_quit_button);
+    
+    
     _scroll_vbox.append(transport_box);
 
     _tonights_movie_label.set_text("Tonight's Movie: None");
@@ -690,7 +711,7 @@ ControlPanelWindow::ControlPanelWindow()
         #btn_rewind:hover label {
             background-color: #2e6436;
         }
-
+     
         #btn_pause:active,
         #btn_pause:active label,
         #btn_ff:active,
@@ -699,6 +720,32 @@ ControlPanelWindow::ControlPanelWindow()
         #btn_rewind:active label {
             background-color: #255030;
         }
+
+
+        #btn_quit,
+        #btn_quit label,
+        #btn_quit label {
+            background-color: #a16b07ff;
+            color: white;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        #btn_quit:hover,
+        #btn_quit:hover label,
+        #btn_quit:hover label {
+            background-color: #684c01ff;
+        }
+
+        #btn_quit:active,
+        #btn_quit:active label,  
+        #btn_quit:active label {
+            background-color: #3a2a00ff;
+        }
+            
+        
+
 
         #btn_save_LED,
         #btn_save_LED label,
@@ -880,5 +927,8 @@ void ControlPanelWindow::_updateSlidersFromGuiParams()
         .set_value(g_gui_LED_params.Green_Gain.load());
 
     _slider_params.at(_UIParamKeys::BLUE_GAIN_LED)
-        .set_value(g_gui_LED_params.Blue_Gain.load());
+        .set_value(g_gui_LED_params.Blue_Gain.load());          
+
+    _slider_params.at(_UIParamKeys::WHITE_GAIN_LED)
+        .set_value(g_gui_LED_params.White_Gain.load());     
 }
