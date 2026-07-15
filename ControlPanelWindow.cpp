@@ -246,7 +246,7 @@ ControlPanelWindow::ControlPanelWindow()
 {
     set_title(_TITLE.data());
 
-    set_default_size(350, 590);
+    set_default_size(350, 630);
     set_resizable(true);
 
     _scroll.set_policy(Gtk::PolicyType::NEVER, Gtk::PolicyType::AUTOMATIC);
