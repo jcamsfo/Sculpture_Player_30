@@ -9,18 +9,31 @@ constexpr int MAIN_LOOP_TARGET__USECS = (1'000'000 + FPS / 2) / FPS;  // rounded
 
 
 
+// original
 constexpr int SCREEN_IMAGE_ROWS = 196;
 constexpr int SCREEN_IMAGE_COLS = 1920;
 
 constexpr int SCULPTURE_IMAGE_ROWS = 18;
 constexpr int SCULPTURE_IMAGE_COLS = 240;
 
+constexpr float H_START = 12;
+constexpr float V_START = 23;
+constexpr float H_GAP = 7.8;
+constexpr float V_GAP = 8.3;
 
-// constexpr int SCREEN_IMAGE_ROWS = 280;
-// constexpr int SCREEN_IMAGE_COLS = 1024;
 
-// constexpr int SCULPTURE_IMAGE_ROWS = 70;
-// constexpr int SCULPTURE_IMAGE_COLS = 256;
+// constexpr int SCREEN_IMAGE_ROWS = 170;
+// constexpr int SCREEN_IMAGE_COLS = 1900;
+
+
+// constexpr int SCULPTURE_IMAGE_ROWS = 18;
+// constexpr int SCULPTURE_IMAGE_COLS = 240;
+
+// constexpr float H_START = 14;
+// constexpr float V_START = 10;
+// constexpr float H_GAP = 7.8;
+// constexpr float V_GAP = 8.3;
+
 
 
 constexpr int SCULPTURE_SIZE_RGB = SCULPTURE_IMAGE_ROWS * SCULPTURE_IMAGE_COLS * 3;
@@ -43,10 +56,7 @@ enum Stagger_Options
     LEFT_COLUMN_DOWN = 4
 };
 
-constexpr float H_START = 12;
-constexpr float V_START = 23;
-constexpr float H_GAP = 7.8;
-constexpr float V_GAP = 8.3;
+
 constexpr int STAGGER_TYPE = TOP_ROW_LEFT;
 
 
