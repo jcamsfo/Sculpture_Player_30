@@ -225,8 +225,8 @@ void process_downstream_image_with_shift(const cv::Mat &src,
   process_pixels_dst(dst, p);
 
    // LEAK TESTING 
-  if (p.Filter_Type)
-    gauss_blur_inplace(dst, p.Filter_Type);
+  // if (p.Filter_Type)
+  //   gauss_blur_inplace(dst, p.Filter_Type);
 
 }
 

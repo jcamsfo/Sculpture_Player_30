@@ -7,6 +7,10 @@ Color_Gain      100
 Color_Hue       0
 H_Shift         0
 Red_Gain        100
+H_Shift         0
+Rotate          0
+Speed           100
+Filter          19
 Green_Gain      100
 Blue_Gain       100
 White_Gain      100

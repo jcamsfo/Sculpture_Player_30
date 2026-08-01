@@ -10,29 +10,29 @@ constexpr int MAIN_LOOP_TARGET__USECS = (1'000'000 + FPS / 2) / FPS;  // rounded
 
 
 // original
-constexpr int SCREEN_IMAGE_ROWS = 196;
-constexpr int SCREEN_IMAGE_COLS = 1920;
-
-constexpr int SCULPTURE_IMAGE_ROWS = 18;
-constexpr int SCULPTURE_IMAGE_COLS = 240;
-
-constexpr float H_START = 12;
-constexpr float V_START = 23;
-constexpr float H_GAP = 7.8;
-constexpr float V_GAP = 8.3;
-
-
-// constexpr int SCREEN_IMAGE_ROWS = 170;
-// constexpr int SCREEN_IMAGE_COLS = 1900;
-
+// constexpr int SCREEN_IMAGE_ROWS = 196;
+// constexpr int SCREEN_IMAGE_COLS = 1920;
 
 // constexpr int SCULPTURE_IMAGE_ROWS = 18;
 // constexpr int SCULPTURE_IMAGE_COLS = 240;
 
-// constexpr float H_START = 14;
-// constexpr float V_START = 10;
+// constexpr float H_START = 12;
+// constexpr float V_START = 23;
 // constexpr float H_GAP = 7.8;
 // constexpr float V_GAP = 8.3;
+
+// new image size
+constexpr int SCREEN_IMAGE_ROWS = 170;
+constexpr int SCREEN_IMAGE_COLS = 1900;
+
+
+constexpr int SCULPTURE_IMAGE_ROWS = 18;
+constexpr int SCULPTURE_IMAGE_COLS = 240;
+
+constexpr float H_START = 14;
+constexpr float V_START = 10;
+constexpr float H_GAP = 7.8;
+constexpr float V_GAP = 8.3;
 
 
 
@@ -90,14 +90,14 @@ struct ParamLimit
 inline constexpr ParamLimit Process_Default_Limits[] =
 {
     {0, 0, 130},
-    {0, -100, 100},
+    {0, -100, 100}, 
     {0, 0, 200},
     {0, -180, 180},
     {0, 0, 100},
     {0, 0, 360},
     {0, -100, 100},
     {0, 0, 300},
-    {0, 0, 10},
+    {0, 0, 33},
 
     {0, 0, 100},  // R
     {0, 0, 100},  // G
